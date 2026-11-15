@@ -1,0 +1,49 @@
+<!doctype html><html><head><meta charset="utf-8"><title>D&D challenge verifier</title>
+<style>body{font:13px system-ui;background:#111;color:#ddd;padding:10px}.ok{color:#4ade80}.bad{color:#f87171}</style></head><body>
+<h3>Challenge verifier</h3><div id="log"></div>
+<script>window.DD = { units: [], glossary: {}, tracks: [], tiers: [] }; function G(o){ for (var k in o) DD.glossary[k] = o[k]; } function U(){}</script>
+<script src="../challenges/core.js"></script>
+<script>
+// load challenge files listed in index.html order (synchronously via XHR)
+(function(){ var x = new XMLHttpRequest(); x.open('GET', '../index.html', false); x.send(); var files = (x.responseText.match(/<script src="challenges\/[^"]+"/g) || []).map(function(s){ return s.slice(13, -1); }).filter(function(f){ return f !== 'challenges/core.js'; });
+  files.forEach(function(f){ var r = new XMLHttpRequest(); r.open('GET', '../' + f, false); r.send(); (0, eval)(r.responseText); }); })();
+</script>
+<script src="../lib/gitsim.js"></script>
+<script src="../lib/sandbox.js"></script>
+<script>
+var out = [], logEl = document.getElementById('log');
+function log(s, ok) { var d = document.createElement('div'); d.className = ok ? 'ok' : 'bad'; d.textContent = s; logEl.appendChild(d); }
+var CHD = window.CHD;
+async function runOne(ch, vals) {
+  if (ch.sb === 'html' || ch.sb === 'js') { var r = await SB.runFrame(ch, SB.fill(ch, vals), null, { hidden: true, timeout: 8000 }); if (r.frame) r.frame.remove(); return { res: r.res, err: (r.errs && r.errs[0] && r.errs[0].msg) || (r.timeout ? 'timeout' : ''), logs: r.logs }; }
+  if (ch.sb === 'py') { var p = await SB.runPy(ch, SB.fill(ch, vals)); return { res: p.res, err: p.err ? p.err.msg : '', logs: p.out }; }
+  if (ch.sb === 'sql') { var q = await SB.runSql(ch, SB.fill(ch, vals)); return { res: q.res, err: q.err ? q.err.msg : '', logs: [] }; }
+  if (ch.sb === 'cmp') { var c = SB.runCompiled(ch, vals); return { res: c.res, err: c.missing ? 'MISSING compiled record' : '', logs: c.compiled ? [c.compiled.out, c.compiled.err] : [] }; }
+  return { res: [], err: 'unknown sb' };
+}
+async function runGit(ch, cmds) { var g = SB.newGit(ch); var outs = []; cmds.forEach(function (c) { var o; try { o = g.run(c); } catch (e) { o = 'ERR ' + e.message; } g.lastOut = o; outs.push('$ ' + c + '\n' + o); }); return { res: SB.checkGit(ch, g), err: '', logs: outs }; }
+async function runAI(ch, parts) {
+  var sel = {}; parts.forEach(function (k) { sel[k] = 1; }); var has = function (k) { return !!sel[k]; };
+  var v = ch.ai.variants.filter(function (x) { try { return new Function('has', 'return (' + (x.when || 'true') + ')')(has); } catch (e) { return false; } })[0];
+  var sim = Object.assign({}, ch, { sb: 'js' }); var r = await SB.runFrame(sim, v.code, null, { hidden: true, timeout: 8000 }); if (r.frame) r.frame.remove();
+  return { res: r.res, err: (r.errs && r.errs[0] && r.errs[0].msg) || '', logs: r.logs };
+}
+async function verify(filter) {
+  var list = CHD.list.filter(function (c) { return !filter || filter.indexOf(c.sb) >= 0 || filter.indexOf(c.id) >= 0 || filter.indexOf('t:' + c.t) >= 0; });
+  for (var i = 0; i < list.length; i++) {
+    var ch = list[i], start, sol, item = { id: ch.id, sb: ch.sb };
+    try {
+      if (ch.sb === 'git') { start = await runGit(ch, []); sol = await runGit(ch, ch.sol); }
+      else if (ch.sb === 'ai') { start = await runAI(ch, []); sol = await runAI(ch, ch.sol); }
+      else { start = await runOne(ch, CHD.startVals(ch)); sol = await runOne(ch, CHD.solVals(ch)); }
+      item.startFails = ch.explore ? true : !(start.res.length && start.res.every(Boolean));
+      item.solPasses = sol.res.length === ch.goals.length && sol.res.every(Boolean);
+      item.ok = item.startFails && item.solPasses && ch.goals.length > 0;
+      item.start = start.res; item.sol = sol.res; item.solErr = sol.err; item.startErr = start.err;
+      if (!item.ok) item.solLogs = (sol.logs || []).slice(-12);
+    } catch (e) { item.ok = false; item.exc = String(e && e.message || e); }
+    out.push(item); log((item.ok ? '✔ ' : '✘ ') + ch.id + (item.ok ? '' : ' ' + JSON.stringify(item)), item.ok);
+  }
+  window.__VERIFY = out; window.__DONE = true; return out;
+}
+</script></body></html>

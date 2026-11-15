@@ -71,6 +71,7 @@ function header() {
     '<span class="chip" id="chipCoins" title="Coins">🪙 ' + fmt(S.coins) + '</span>' +
     '<span class="chip" title="Insight">💠 ' + fmt(S.insight) + '</span>' +
     '<span class="chip" title="Hint tokens">💡 ' + S.hints + '/' + G.hintCap() + '</span>' +
+    '<span class="chip" title="Challenges built">🔨 ' + G.chSolvedCount() + '/' + G.CHD.list.length + '</span>' +
     '<span class="chip" title="Knowledge mastered">🧠 ' + G.countMastered() + '/' + G.ALLQ.length + '</span>' +
     '</div>';
   if (lastLevel && L.level > lastLevel) { SFX.level(); confetti(80); toast('⭐ Level up! You are now <b>level ' + L.level + '</b>', 'gold'); }
@@ -79,14 +80,15 @@ function header() {
 
 // ---------------- tabs & pages ----------------
 var TABS = [
-  { id: 'learn', ic: '📚', name: 'Learn' }, { id: 'work', ic: '💼', name: 'Work' }, { id: 'upg', ic: '⬆️', name: 'Upgrades' }, { id: 'codex', ic: '📖', name: 'Codex' }, { id: 'hero', ic: '🧙', name: 'Hero' }];
-var tab = 'learn', subIdx = { learn: 0, work: 0, upg: 0, codex: 0, hero: 0 }, scrollMem = {};
+  { id: 'build', ic: '🔨', name: 'Build' }, { id: 'learn', ic: '📚', name: 'Review' }, { id: 'shop', ic: '🏗️', name: 'Workshop' }, { id: 'work', ic: '💼', name: 'Work' }, { id: 'upg', ic: '⬆️', name: 'Upgrades' }, { id: 'codex', ic: '📖', name: 'Codex' }];
+var tab = 'build', subIdx = { build: 0, learn: 0, shop: 0, work: 0, upg: 0, codex: 0 }, scrollMem = {};
 function subpages() {
-  if (tab === 'learn') return [{ id: 'today', name: '🏠 Today' }].concat(DD.tracks.map(function (t) { return { id: 't-' + t.id, name: t.icon + ' ' + t.short, lock: !G.trackUnlocked(t.id), dot: G.trackUnlocked(t.id) ? dueInTrack(t.id) : 0 }; }));
+  if (tab === 'build') return [{ id: 'today', name: '🏠 Today' }].concat(G.CHD.tracks.map(function (t) { return { id: 'c-' + t.id, name: t.icon + ' ' + t.name, lock: !G.chTrackUnlocked(t.id) }; }));
+  if (tab === 'shop') return [{ id: 'proj', name: '🏗️ Projects & builds' }];
+  if (tab === 'learn') return [{ id: 'rtoday', name: '🔁 Review' }].concat(DD.tracks.map(function (t) { return { id: 't-' + t.id, name: t.icon + ' ' + t.short, lock: !G.trackUnlocked(t.id), dot: G.trackUnlocked(t.id) ? dueInTrack(t.id) : 0 }; }));
   if (tab === 'work') return [{ id: 'desk', name: '💻 Desk' }, { id: 'tickets', name: '🎫 How work pays' }];
   if (tab === 'upg') return [{ id: 'insight', name: '💠 Mastery' }, { id: 'office', name: '🪙 Office' }];
-  if (tab === 'codex') return [{ id: 'relics', name: '🏺 Relics' }, { id: 'gloss', name: '📖 Glossary' }, { id: 'ach', name: '🏆 Achievements' }];
-  return [{ id: 'profile', name: '🧙 Profile' }, { id: 'settings', name: '⚙️ Settings' }];
+  return [{ id: 'profile', name: '🧙 Profile' }, { id: 'relics', name: '🏺 Relics' }, { id: 'gloss', name: '📖 Glossary' }, { id: 'ach', name: '🏆 Achievements' }, { id: 'settings', name: '⚙️ Settings' }];
 }
 function dueInTrack(t) { var n = 0; (G.TRACK_UNITS[t] || []).forEach(function (u) { if (G.unitOpen(u)) n += G.unitDue(u); }); return n; }
 function renderTabs() {
@@ -114,7 +116,10 @@ function onPagesScroll() {
   }, 80);
 }
 function pageHTML(id) {
-  if (id === 'today') return todayHTML();
+  if (id === 'today') return window.PLAY.todayHTML();
+  if (id.indexOf('c-') === 0) return window.PLAY.trackHTML(id.slice(2));
+  if (id === 'proj') return window.PLAY.workshopHTML();
+  if (id === 'rtoday') return todayHTML();
   if (id.indexOf('t-') === 0) return trackHTML(id.slice(2));
   if (id === 'desk') return deskHTML();
   if (id === 'tickets') return workInfoHTML();
@@ -137,20 +142,19 @@ function nextUnit() { // first open, not learned unit in track order (think, cod
 function todayHTML() {
   var S = G.S, due = G.allDue().length, nu = nextUnit(), h = '';
   var T = Math.min(S.tier + 1, 5), ts = G.tierStatus(T), tier = DD.tiers[T - 1];
-  h += '<div class="card trackHero" style="--tc:#7c5cff"><div class="row"><div class="bigIcon">🐉</div><div class="grow"><h2>Your quest today</h2><div class="muted">Daily goal: earn ' + G.DAILY_GOAL_XP + ' XP to keep your 🔥 streak. Knowledge only grows when you answer. Your desk earns coins while you are away.</div></div></div>' +
+  h += '<div class="card trackHero" style="--tc:#7c5cff"><div class="row"><div class="bigIcon">🐉</div><div class="grow"><h2>Review &amp; quiz lessons</h2><div class="muted">Short quiz lessons and spaced review lock in what you discovered while building. Tier bosses need ' + Math.round(G.BOSS_MASTERY * 100) + '% quiz mastery.</div></div></div>' +
     '<div class="bar" style="margin-top:10px"><i style="width:' + Math.min(100, S.daily.xp / G.DAILY_GOAL_XP * 100) + '%"></i><span>' + Math.min(S.daily.xp, G.DAILY_GOAL_XP) + ' / ' + G.DAILY_GOAL_XP + ' XP' + (S.daily.goal ? ' ✓' : '') + '</span></div>' +
     (nu ? '<button class="btn big" style="margin-top:12px" data-act="lesson" data-v="' + nu.id + '">▶ Continue: ' + nu.icon + ' ' + esc(nu.name) + '</button><div class="tiny" style="margin-top:6px;text-align:center">' + TR[nu.track].icon + ' ' + TR[nu.track].name + ' · ' + DD.tiers[nu.tier - 1].name + '</div>' : '<div class="muted" style="margin-top:10px">Every open unit is learned. Review to raise mastery and open the boss.</div>') + '</div>';
   h += '<div class="card reviewCard"><div class="row"><div style="font-size:38px">🔁</div><div class="grow"><h3>Spaced review</h3><div class="muted">' + (due ? '<b style="color:var(--gold)">' + due + ' due</b>. Missed questions come back sooner; known ones wait longer.' : 'Nothing due right now. Practice your weakest questions for half XP.') + '</div></div></div><button class="btn ' + (due ? 'gold' : 'ghost') + ' big" style="margin-top:10px" data-act="review">' + (due ? 'Review ' + Math.min(due, 12) + ' due' : 'Practice weakest') + '</button></div>';
-  h += '<div class="sectionTitle">Daily deeds</div><div class="daily">' + G.DEEDS.map(function (d) { var ok = d.f(), cl = S.daily.claimed[d.id]; return '<div class="d ' + (cl ? 'done' : '') + '"><div style="font-size:20px">' + d.ic + '</div>' + d.txt + '<div style="margin-top:6px">' + (cl ? '✓ +' + d.r + ' 💠' : ok ? '<button class="btn sm green" data-act="deed" data-v="' + d.id + '">Claim ' + d.r + '💠</button>' : '<span class="tiny">+' + d.r + ' 💠</span>') + '</div></div>'; }).join('') + '</div>';
-  if (S.tier < 5) {
+  if (false) {
     h += '<div class="card bossCard" style="margin-top:12px"><div class="row"><div class="bossIc">' + tier.bossIcon + '</div><div class="grow"><div class="tiny">TIER ' + T + ' BOSS · ' + tier.icon + ' ' + tier.name.toUpperCase() + '</div><h3>' + tier.boss + '</h3><div class="muted">A mixed exam of ' + 20 + ' questions from every ' + tier.name + ' unit. Land 16 hits before you lose 4 focus. Winning opens the next tier and promotes you to <b>' + G.RANKS[T].name + '</b>.</div></div></div>' +
       '<div class="req"><span class="' + (ts.learned === ts.units ? 'ok' : 'no') + '">' + (ts.learned === ts.units ? '✅' : '⬜') + '</span> Learn every ' + tier.name + ' unit (' + ts.learned + '/' + ts.units + ')</div>' +
       '<div class="req"><span class="' + (ts.mastery >= ts.need ? 'ok' : 'no') + '">' + (ts.mastery >= ts.need ? '✅' : '⬜') + '</span> Tier mastery ' + pct(ts.mastery) + ' / ' + pct(ts.need) + '</div>' +
       '<div class="bar small" style="margin-top:6px"><i style="width:' + Math.min(100, ts.mastery / ts.need * 100) + '%;background:linear-gradient(90deg,#ff3d7f,#fb923c)"></i></div>' +
       (ts.cooldown ? '<div class="tiny" style="margin-top:8px">Regrouping after a loss… try again in ' + dur(ts.cooldown) + '</div>' : '') +
       '<button class="btn red big" style="margin-top:10px" data-act="boss" data-v="' + T + '" ' + (ts.ready && !ts.cooldown ? '' : 'disabled') + '>⚔️ Fight ' + tier.boss + '</button></div>';
-  } else h += '<div class="card bossCard"><h3>🐉 Every boss defeated</h3><div class="muted">You are an AI-Native Lead. Keep reviewing to master all ' + G.ALLQ.length + ' questions.</div></div>';
-  h += '<div class="sectionTitle">Tracks · swipe ➜</div><div class="trackGrid">' + DD.tracks.map(function (t, i) { var st = G.trackStats(t.id), tl = G.trackLevel(t.id), un = G.trackUnlocked(t.id); return '<button class="tg" style="text-align:left;' + (un ? '' : 'opacity:.45') + '" data-act="sub" data-v="' + (i + 1) + '"><div class="row"><span style="font-size:22px">' + t.icon + '</span><div class="grow"><b style="font-size:13px">' + t.short + '</b><div class="tiny">' + (un ? t.cls + ' Lv ' + tl.level : '🔒 ' + lockText(t.id)) + '</div></div></div><div class="bar small"><i style="width:' + st.mastery * 100 + '%;background:' + t.color + '"></i></div></button>'; }).join('') + '</div>';
+  }
+  h += '<div class="sectionTitle">Quiz tracks · swipe ➜</div><div class="trackGrid">' + DD.tracks.map(function (t, i) { var st = G.trackStats(t.id), tl = G.trackLevel(t.id), un = G.trackUnlocked(t.id); return '<button class="tg" style="text-align:left;' + (un ? '' : 'opacity:.45') + '" data-act="sub" data-v="' + (i + 1) + '"><div class="row"><span style="font-size:22px">' + t.icon + '</span><div class="grow"><b style="font-size:13px">' + t.short + '</b><div class="tiny">' + (un ? t.cls + ' Lv ' + tl.level : '🔒 ' + lockText(t.id)) + '</div></div></div><div class="bar small"><i style="width:' + st.mastery * 100 + '%;background:' + t.color + '"></i></div></button>'; }).join('') + '</div>';
   return h;
 }
 function lockText(tid) { var us = G.TRACK_UNITS[tid]; if (us[0].tier > G.S.tier + 1) return 'Opens at ' + DD.tiers[us[0].tier - 1].name; var need = G.TRACK_UNLOCK[tid] - G.learnedCount(); return need > 0 ? 'Learn ' + need + ' more unit' + (need > 1 ? 's' : '') : ''; }
@@ -181,7 +185,7 @@ function begin(s) {
 function lhead() {
   var total = sess.queue.length, p = sess.i / total * 100;
   var h = '<div class="lhead"><button class="x" data-act="quit">✕</button><div class="lprog"><i style="width:' + p + '%"></i></div><div class="combo ' + (sess.combo >= 3 ? 'hot' : '') + '">' + (sess.combo >= 2 ? '🔥' + sess.combo : '') + '</div></div>';
-  if (sess.kind === 'boss') h += '<div class="bossBar"><div class="bi" id="bossIc">' + DD.tiers[sess.tierN - 1].bossIcon + '</div><div class="grow"><div class="tiny">' + esc(DD.tiers[sess.tierN - 1].boss) + ' · ' + sess.hp + ' HP</div><div class="hpbar"><i style="width:' + (sess.hp / sess.maxHp * 100) + '%"></i></div></div><div class="hearts">' + '💙'.repeat(Math.max(0, sess.focus)) + '🖤'.repeat(4 - Math.max(0, sess.focus)) + '</div></div>';
+  if (sess.kind === 'boss') h += '<div class="bossBar"><div class="bi" id="bossIc">' + DD.tiers[sess.tierN - 1].bossIcon + '</div><div class="grow"><div class="tiny">' + esc(DD.tiers[sess.tierN - 1].boss) + ' · ' + sess.hp + ' HP</div><div class="hpbar"><i style="width:' + (sess.hp / sess.maxHp * 100) + '%"></i></div></div><div class="hearts">' + '💙'.repeat(Math.max(0, sess.focus)) + '🖤'.repeat(Math.max(0, 3 - Math.max(0, sess.focus))) + '</div></div>';
   return h;
 }
 function hl(code) {
@@ -449,15 +453,16 @@ function profileHTML() {
   var S = G.S, L = G.levelInfo(), st = S.stats;
   var h = '<div class="card trackHero" style="--tc:#22d3ee"><div class="row"><div class="avatar" style="width:64px;height:64px;font-size:38px">' + (G.lv('hat') ? '<span class="hat" style="font-size:28px;top:-18px">🎩</span>' : '') + G.rank().ic + '</div><div class="grow"><h2>' + G.rank().name + '</h2><div class="muted">Level ' + L.level + ' · ' + G.countMastered() + ' questions mastered · best streak ' + S.streak.best + '</div></div></div>' +
     '<div class="row" style="margin-top:10px;gap:4px">' + G.RANKS.map(function (r, i) { return '<div style="flex:1;text-align:center;opacity:' + (S.tier >= r.t ? 1 : .3) + '"><div style="font-size:20px">' + r.ic + '</div><div class="tiny" style="font-size:9px">' + r.name + '</div></div>'; }).join('') + '</div></div>';
-  h += '<div class="sectionTitle">Classes (tracks)</div>' + DD.tracks.map(function (t) { var tl = G.trackLevel(t.id), ts = G.trackStats(t.id); return '<div class="upg"><div class="uic">' + t.icon + '</div><div class="grow"><b>' + t.cls + '</b> <span class="tiny">' + t.name + '</span><div class="bar small"><i style="width:' + tl.into / tl.need * 100 + '%;background:' + t.color + '"></i></div><div class="tiny">Lv ' + tl.level + ' · mastery ' + pct(ts.mastery) + ' · ' + ts.mastered + '/' + ts.n + ' 👑</div></div></div>'; }).join('');
+  h += '<div class="sectionTitle">Builder skills</div>' + G.CHD.tracks.map(function (t) { var cs = G.chTrackStats(t.id); return '<div class="upg"><div class="uic">' + t.icon + '</div><div class="grow"><b>' + esc(t.name) + '</b><div class="bar small"><i style="width:' + (cs.n ? cs.solved / cs.n * 100 : 0) + '%;background:' + t.color + '"></i></div><div class="tiny">' + cs.solved + '/' + cs.n + ' challenges</div></div></div>'; }).join('');
+  h += '<div class="sectionTitle">Quiz classes</div>' + DD.tracks.map(function (t) { var tl = G.trackLevel(t.id), ts = G.trackStats(t.id); return '<div class="upg"><div class="uic">' + t.icon + '</div><div class="grow"><b>' + t.cls + '</b> <span class="tiny">' + t.name + '</span><div class="bar small"><i style="width:' + tl.into / tl.need * 100 + '%;background:' + t.color + '"></i></div><div class="tiny">Lv ' + tl.level + ' · mastery ' + pct(ts.mastery) + ' · ' + ts.mastered + '/' + ts.n + ' 👑</div></div></div>'; }).join('');
   var acc = st.answered ? st.correct / st.answered : 0;
-  h += '<div class="sectionTitle">Stats</div><div class="card"><div class="muted" style="line-height:1.8">Answers: <b>' + fmt(st.answered) + '</b> (' + pct(acc) + ' correct)<br>Lessons: <b>' + st.lessons + '</b> · perfect <b>' + st.perfect + '</b><br>Best combo: <b>' + st.bestCombo + '</b> · reviews <b>' + st.reviews + '</b><br>Bosses beaten: <b>' + S.tier + '</b>/5<br>Tickets finished: <b>' + fmt(st.tickets) + '</b> · coins earned <b>' + fmt(st.coinsEarned) + '</b><br>Time in lessons: <b>' + dur(st.playMs) + '</b><br>Started: ' + new Date(S.created).toLocaleDateString() + '</div></div>';
+  h += '<div class="sectionTitle">Stats</div><div class="card"><div class="muted" style="line-height:1.8">Challenges built: <b>' + G.chSolvedCount() + '</b> · first-run solves <b>' + (st.firstRun || 0) + '</b> · experiments <b>' + (st.experiments || 0) + '</b><br>Answers: <b>' + fmt(st.answered) + '</b> (' + pct(acc) + ' correct)<br>Lessons: <b>' + st.lessons + '</b> · perfect <b>' + st.perfect + '</b><br>Best combo: <b>' + st.bestCombo + '</b> · reviews <b>' + st.reviews + '</b><br>Bosses beaten: <b>' + S.tier + '</b>/5<br>Tickets finished: <b>' + fmt(st.tickets) + '</b> · coins earned <b>' + fmt(st.coinsEarned) + '</b><br>Time in lessons: <b>' + dur(st.playMs) + '</b><br>Started: ' + new Date(S.created).toLocaleDateString() + '</div></div>';
   return h;
 }
 function settingsHTML() {
   return '<div class="card"><h3>⚙️ Settings</h3><div class="row"><div class="grow">Sound effects</div><button class="btn sm ' + (G.S.settings.sound ? 'green' : 'ghost') + '" data-act="sound">' + (G.S.settings.sound ? '🔊 On' : '🔇 Off') + '</button></div></div>' +
     '<div class="card"><h3>💾 Save</h3><div class="muted">Progress saves automatically in this browser. Export to move it to another device.</div><div class="row" style="margin-top:10px;gap:8px"><button class="btn sm" data-act="export">Export save</button><button class="btn sm ghost" data-act="import">Import save</button></div></div>' +
-    '<div class="card"><h3>❓ How learning works</h3><div class="muted" style="line-height:1.6">Each question moves through 6 memory boxes. A right answer moves it up a box and pushes it further out: 10 min, then 1 day, 3 days, 7 days, 16 days. A miss sends it back to box 1. Answering early still earns half XP but does not move it up a box. You only get there by actually remembering over time, like learning a language.<br><br>Units open one at a time in each track. Tracks open as you learn more units. Each tier ends with a boss exam that opens the next tier: Very Basic, then Beginner, Intermediate, Advanced and Expert.<br><br>' + G.ALLQ.length + ' questions in ' + DD.units.length + ' units, 11 formats, ' + Object.keys(DD.glossary).length + ' glossary terms.</div></div>' +
+    '<div class="card"><h3>❓ How learning works</h3><div class="muted" style="line-height:1.6">Each question moves through 6 memory boxes. A right answer moves it up a box and pushes it further out: 10 min, then 1 day, 3 days, 7 days, 16 days. A miss sends it back to box 1. Answering early still earns half XP but does not move it up a box. You only get there by actually remembering over time, like learning a language.<br><br>Units open one at a time in each track. Tracks open as you learn more units. Each tier ends with a boss exam that opens the next tier: Very Basic, then Beginner, Intermediate, Advanced and Expert.<br><br>🔨 Build challenges: change the highlighted pieces of code (or switch to ✏️ Type), run, and meet the goals. Hints go nudge → bigger hint → solution; the bigger two cost XP. Experiment zones pay for every new thing you try.<br><br>' + G.CHD.list.length + ' hands-on challenges, ' + G.ALLQ.length + ' quiz questions in ' + DD.units.length + ' units, 11 formats, ' + Object.keys(DD.glossary).length + ' glossary terms.</div></div>' +
     '<div class="card"><h3>⚠️ Danger zone</h3><button class="btn sm red" data-act="reset">Reset all progress</button></div>';
 }
 
@@ -465,6 +470,7 @@ function settingsHTML() {
 document.addEventListener('click', function (e) {
   var el = e.target.closest('[data-act]'); if (!el || el.disabled) return;
   var a = el.dataset.act, v = el.dataset.v;
+  if (a.indexOf('ch') === 0 && a !== 'chain') { if ((a === 'chopen') && !$('#modal').classList.contains('hidden')) closeModal(); window.PLAY.act(a, v, el); return; }
   if ($('#overlay').contains(el)) { act(a, v, el, e); return; }
   SFX.tap();
   if (a === 'tab') { if (tab === v) { subIdx[tab] = 0; } tab = v; render(); }
@@ -486,10 +492,11 @@ document.addEventListener('click', function (e) {
 document.addEventListener('input', function (e) { if (e.target.id === 'glossQ') { glossFilter = e.target.value; $('#glossList').innerHTML = glossList(); } });
 function flyCoins() { var d = $('#desk'); if (!d) return; for (var i = 0; i < 5; i++) { var s = document.createElement('span'); s.className = 'fly'; s.textContent = '🪙'; s.style.left = (40 + Math.random() * 20) + '%'; s.style.top = '50%'; s.style.animationDelay = (i * 0.08) + 's'; d.appendChild(s); setTimeout(function (x) { x.remove(); }.bind(null, s), 1500); } }
 
+window.UIX = { esc: esc, toast: toast, SFX: SFX, confetti: confetti, header: header, render: render, hl: hl, modal: modal, closeModal: closeModal, fmt: fmt, dur: dur, audioInit: audioInit };
 // ---------------- hooks from engine ----------------
 window.UI = {
   relicFound: function (r) { setTimeout(function () { SFX.relic(); confetti(200, ['#fbbf24', '#fde68a', '#f472b6', '#22d3ee']); toast('<span style="font-size:22px">' + r.ic + '</span> RELIC FOUND: <b>' + r.name + '</b><br><small>' + r.eff + '</small>', 'gold'); }, 300); },
-  achievement: function (a) { if (sess) return; setTimeout(function () { SFX.coin(); toast(a.ic + ' Achievement: <b>' + a.name + '</b> (+10 💠)'); }, 600); },
+  achievement: function (a) { if (sess || (window.PLAY && window.PLAY.P)) return; setTimeout(function () { SFX.coin(); toast(a.ic + ' Achievement: <b>' + a.name + '</b> (+10 💠)'); }, 600); },
   dailyGoal: function (rew) { setTimeout(function () { SFX.done(); confetti(120); toast('🎯 Daily goal met! 🔥 Streak ' + G.S.streak.count + ' · +' + rew + ' 💠 · +1 💡', 'gold'); }, 500); }
 };
 
@@ -505,8 +512,11 @@ window.addEventListener('resize', function () { var p = $('#pages'); p.scrollLef
 $('#gateBtn').addEventListener('click', function () {
   audioInit(); SFX.done(); $('#audioGate').classList.add('hidden');
   if (!G.S.seenIntro) {
-    G.S.seenIntro = true; G.save();
-    modal('<div class="bigic">🐉</div><h2>Welcome, Intern</h2><p class="muted" style="text-align:left;line-height:1.55">You are starting a long career: <b>Intern → Junior → Developer → Senior → Staff Architect → AI-Native Lead</b>.<br><br>📚 <b>Learn</b>: short quiz lessons, like learning a language. Questions you miss come back sooner. Only answering grows your knowledge.<br>🔁 <b>Review</b> daily. Mastery takes weeks of spaced practice.<br>⚔️ <b>Bosses</b> are exams at the end of each tier.<br>💼 <b>Work</b>: your developer earns coins on their own, faster the more you know.<br><br>Start with <b>🧠 Thinking Like a Developer → Step by Step</b>.</p><button class="btn big" data-act="close">Let’s go</button>');
+    G.S.seenIntro = true; G.S.seenV2 = true; G.save();
+    modal('<div class="bigic">🐉</div><h2>Welcome, Intern</h2><p class="muted" style="text-align:left;line-height:1.55">You are starting a long career: <b>Intern → Junior → Developer → Senior → Staff Architect → AI-Native Lead</b>.<br><br>🔨 <b>Build</b>: hands-on challenges. You change real code, run it, see the result, and discover how it works. HTML, CSS, JavaScript, Python, SQL, Git, C++ and more, all in your browser.<br>🏗️ <b>Workshop</b>: projects you build step by step, kept so you can run them any time.<br>📚 <b>Review</b>: quick quiz lessons and spaced review so it sticks.<br>⚔️ <b>Bosses</b> end each tier: a build under pressure, then an exam.<br>💼 <b>Work</b>: your developer earns coins on their own, faster the more you know.<br><br>Start with <b>🧱 HTML → your first page</b>.</p><button class="btn big" data-act="close">Let’s build</button>');
+  } else if (!G.S.seenV2) {
+    G.S.seenV2 = true; G.save();
+    modal('<div class="bigic">🔨</div><h2>New: learn by building</h2><p class="muted" style="text-align:left;line-height:1.55">Your progress, relics, desk and reviews are all kept.<br><br><b>🔨 Build</b> is the new home: ' + G.CHD.list.length + ' hands-on challenges in live sandboxes. Edit a web page and watch it change, run real Python and SQLite, use a Git terminal with a commit graph, compile C++ and read real compiler errors, and direct an AI coding assistant. You find out <i>why</i> after you get it working.<br><br><b>🏗️ Workshop</b> keeps your projects: a personal website, a to-do app, a weather app, a text adventure, a bookstore database, a mini-game, and a deploy pipeline.<br><br>Your quiz lessons now live in <b>📚 Review</b>. Bosses now start with a build challenge.</p><button class="btn big" data-act="close">Start building</button>');
   } else if (off && (off.coins || off.n || off.away > 3e5)) {
     modal('<div class="bigic">🌅</div><h2>Welcome back!</h2><p class="muted">You were away <b>' + dur(off.away) + '</b>. Your developer worked at ' + pct(off.rate) + ' speed for ' + dur(off.capped) + '.</p><div class="stats3"><div class="stat"><small>Coins</small><b>🪙' + fmt(off.coins) + '</b></div><div class="stat"><small>Tickets</small><b>' + off.n + '</b></div><div class="stat"><small>Rep</small><b>⭐' + off.rep + '</b></div></div>' + (G.lv('queue') ? '' : '<p class="tiny">Without the 📥 Ticket Queue, finished tickets wait for you to claim them.</p>') + '<p class="muted">' + (G.allDue().length ? '🔁 <b>' + G.allDue().length + '</b> question' + (G.allDue().length === 1 ? ' is' : 's are') + ' due for review.' : '') + '</p><button class="btn big" data-act="close">Back to work</button>');
   }
@@ -521,5 +531,5 @@ setInterval(function () {
 }, 250);
 document.addEventListener('visibilitychange', function () { if (document.hidden) G.save(); else { var o = G.offlineCatchup(); lastT = Date.now(); if (o && o.n) toast('🌅 While away: +' + fmt(o.coins) + ' 🪙 from ' + o.n + ' tickets'); if (!sess) render(); } });
 window.addEventListener('pagehide', function () { G.save(); });
-window.__DD = { G: G, begin: begin, act: act, get sess() { return sess; }, get cur() { return cur; }, render: render };
+window.__DD = { G: G, PLAY: window.PLAY, begin: begin, act: act, get sess() { return sess; }, get cur() { return cur; }, render: render };
 })();

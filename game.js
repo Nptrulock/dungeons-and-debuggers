@@ -1,14 +1,15 @@
 // Dungeons & Debuggers — engine (no DOM). State lives in S; UI in ui.js.
 (function (root) {
 'use strict';
-var DD = root.DD;
+var DD = root.DD, CHD = root.CHD || { tracks: [], list: [], byId: {}, projects: [] };
 var MIN = 60e3, HOUR = 36e5, DAY = 864e5;
 // Leitner boxes: 0 new, 1 missed, 2..6. Interval after reaching box b.
 var BOX_INT = [0, 0, 10 * MIN, 20 * HOUR, 3 * DAY, 7 * DAY, 16 * DAY];
 var BOX_POINTS = [0, 0, 1, 2, 3, 4, 6]; // knowledge power per item
 var MASTER_BOX = 6;
-var LESSON_LEN = 8, NEW_PER_LESSON = 4, REVIEW_LEN = 12, BOSS_LEN = 20, BOSS_FOCUS = 4;
-var BOSS_MASTERY = 0.55; // average-box share needed across the tier before the boss opens
+var LESSON_LEN = 8, NEW_PER_LESSON = 4, REVIEW_LEN = 12, BOSS_LEN = 10, BOSS_FOCUS = 3, BOSS_HP = 8;
+var BOSS_MASTERY = 0.25; // quiz mastery share needed across the tier before the boss opens (plus BOSS_BUILD of the tier's challenges)
+var BOSS_BUILD = 0.7;
 var BOSS_COOLDOWN = 30 * MIN;
 var KIND = { mc: 'Quick check', out: 'Predict the output', prompt: 'Choose the better prompt', diff: 'Review the AI diff', git: 'Pick the git command', err: 'Triage the error', tf: 'True or false', order: 'Put in order', fill: 'Fill in the blank', match: 'Match the pairs', bug: 'Spot the bug' };
 var KIND_IC = { mc: '❓', out: '🔮', prompt: '💬', diff: '🧾', git: '🌿', err: '🚩', tf: '⚖️', order: '🪜', fill: '🧩', match: '🔗', bug: '🐞' };
@@ -56,9 +57,12 @@ var RELICS = [
   { id: 'brain', ic: '🧠', name: "Senior's Second Brain", src: 'master', odds: 400, eff: 'Insight x2' },
   { id: 'phoenix', ic: '🔥', name: 'Phoenix Commit', src: 'streak', odds: 90, eff: 'Once a week a missed day is forgiven for free' },
   { id: 'semi', ic: '✨', name: 'The Golden Semicolon', src: 'correct', odds: 25000, eff: 'XP, coins and Insight all x2' },
+  { id: 'anvil', ic: '⚒️', name: 'Anvil of Discovery', src: 'challenge', odds: 350, eff: '+30% XP from hands-on challenges' },
+  { id: 'prism', ic: '🔮', name: 'Prism of Curiosity', src: 'explore', odds: 40, eff: '+1 max hint token, and experiments give double XP' },
+  { id: 'forge', ic: '🔥', name: 'First-Try Forge', src: 'firstrun', odds: 150, eff: 'First-run solves give +50% XP instead of +25%' },
   { id: 'shinybug', ic: '🐞', name: 'Shiny Bug', src: 'shiny', odds: 1, eff: 'Stacks to 10: +5% XP each. Shiny questions appear 1 in 300' }
 ];
-var SRC_TXT = { perfect: 'per perfect lesson', correct: 'per correct answer', boss: 'per boss victory', combo25: 'each time a combo reaches 25', ticket: 'per ticket finished', daily: 'per daily goal met', lesson: 'per lesson completed', master: 'per question mastered', streak: 'per streak day (7+)', shiny: 'per shiny question answered right' };
+var SRC_TXT = { perfect: 'per perfect lesson', correct: 'per correct answer', boss: 'per boss victory', combo25: 'each time a combo reaches 25', ticket: 'per ticket finished', daily: 'per daily goal met', lesson: 'per lesson completed', master: 'per question mastered', streak: 'per streak day (7+)', shiny: 'per shiny question answered right', challenge: 'per challenge solved', explore: 'per new experiment in an Experiment zone', firstrun: 'per challenge solved on the first run' };
 var SHINY_ODDS = 300;
 
 // ---------- achievements ----------
@@ -102,7 +106,18 @@ var ACH = [
   A('rel5', '👑', 'Collector', 'Find 5 different relics', function (s) { return relicCount() >= 5; }),
   A('trk', '🗺️', 'Explorer', 'Unlock every track', function (s) { return DD.tracks.every(function (t) { return trackUnlocked(t.id); }); }),
   A('lv10', '⭐', 'Level 10', 'Reach level 10', function (s) { return levelInfo().level >= 10; }),
-  A('lv25', '🌠', 'Level 25', 'Reach level 25', function (s) { return levelInfo().level >= 25; })
+  A('lv25', '🌠', 'Level 25', 'Reach level 25', function (s) { return levelInfo().level >= 25; }),
+  A('ch1', '🔨', 'It Works!', 'Solve your first hands-on challenge', function (s) { return chSolvedCount() >= 1; }),
+  A('ch25', '🛠️', 'Tinkerer', 'Solve 25 challenges', function (s) { return chSolvedCount() >= 25; }),
+  A('ch75', '🏗️', 'Builder', 'Solve 75 challenges', function (s) { return chSolvedCount() >= 75; }),
+  A('ch150', '🏰', 'Master Builder', 'Solve 150 challenges', function (s) { return chSolvedCount() >= 150; }),
+  A('chAll', '🌋', 'Full Stack', 'Solve every challenge', function (s) { return chSolvedCount() >= CHD.list.length; }),
+  A('fr10', '🎯', 'Measure Twice', 'Solve 10 challenges on the first run', function (s) { return (s.stats.firstRun || 0) >= 10; }),
+  A('nohint', '🧗', 'No Spoilers', 'Solve 30 challenges without hints', function (s) { return (s.stats.noHint || 0) >= 30; }),
+  A('exp20', '🧪', 'Mad Scientist', 'Try 20 experiments in Experiment zones', function (s) { return (s.stats.experiments || 0) >= 20; }),
+  A('sb', '🧰', 'Polyglot', 'Solve a challenge in every kind of sandbox', function (s) { var k = {}; CHD.list.forEach(function (c) { if (chSolved(c.id)) k[c.sb] = 1; }); return ['html', 'js', 'py', 'sql', 'git', 'cmp', 'ai'].every(function (x) { return k[x]; }); }),
+  A('pj1', '📦', 'Shipped', 'Finish your first project', function (s) { return projDoneCount() >= 1; }),
+  A('pjAll', '🏆', 'Portfolio', 'Finish every project', function (s) { return projDoneCount() >= CHD.projects.length; })
 ];
 
 // ---------- index ----------
@@ -119,20 +134,21 @@ var KEY = 'dnd-dev-save-v1';
 var S;
 function fresh() {
   var t = Date.now();
-  return { v: 1, created: t, xp: 0, txp: {}, coins: 0, insight: 0, rep: 0, items: {}, unitLessons: {}, tier: 0, bossCd: {},
+  return { v: 2, ch: {}, chCombo: 0, seenV2: false, created: t, xp: 0, txp: {}, coins: 0, insight: 0, rep: 0, items: {}, unitLessons: {}, tier: 0, bossCd: {},
     streak: { count: 0, best: 0, last: null, freezes: 0, phoenixUsed: 0 }, daily: { day: dayKey(t), xp: 0, lessons: 0, reviews: 0, combo: 0, claimed: {}, goal: false },
     upg: {}, relics: {}, ach: {}, gloss: {}, hints: 3, hintT: t, stats: { answered: 0, correct: 0, lessons: 0, perfect: 0, bestCombo: 0, reviews: 0, tickets: 0, bosses: 0, playMs: 0, coinsEarned: 0 },
     work: { tickets: [], seq: 100 }, settings: { sound: true }, last: t, seenIntro: false };
 }
 function load() {
-  try { var raw = localStorage.getItem(KEY); if (raw) { S = merge(fresh(), JSON.parse(raw)); return true; } } catch (e) { console.warn('load failed', e); }
+  try { var raw = localStorage.getItem(KEY); if (raw) { var o = JSON.parse(raw); S = merge(fresh(), o); migrate(o); return true; } } catch (e) { console.warn('load failed', e); }
   S = fresh(); return false;
 }
 function merge(base, o) { for (var k in o) { if (o[k] && typeof o[k] === 'object' && !Array.isArray(o[k]) && base[k] && typeof base[k] === 'object' && !Array.isArray(base[k])) base[k] = merge(base[k], o[k]); else base[k] = o[k]; } return base; }
+function migrate(o) { if (!o.v || o.v < 2) { S.v = 2; S.migratedFrom = o.v || 1; S.seenV2 = false; save(); } }
 function save() { try { S.last = Date.now(); localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { } }
 function exportSave() { save(); return btoa(unescape(encodeURIComponent(JSON.stringify(S)))); }
-function importSave(str) { var o = JSON.parse(decodeURIComponent(escape(atob(str.trim())))); if (!o || o.v !== 1 || !o.items) throw new Error('Not a Dungeons & Debuggers save'); S = merge(fresh(), o); save(); }
-function reset() { localStorage.removeItem(KEY); S = fresh(); save(); }
+function importSave(str) { var o = JSON.parse(decodeURIComponent(escape(atob(str.trim())))); if (!o || (o.v !== 1 && o.v !== 2) || !o.items) throw new Error('Not a Dungeons & Debuggers save'); S = merge(fresh(), o); migrate(o); save(); }
+function reset() { localStorage.removeItem(KEY); S = fresh(); S.seenV2 = true; save(); }
 
 function dayKey(t) { var d = new Date(t); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); }
 function dayDiff(a, b) { var pa = a.split('-').map(Number), pb = b.split('-').map(Number); return Math.round((new Date(pb[0], pb[1] - 1, pb[2]) - new Date(pa[0], pa[1] - 1, pa[2])) / DAY); }
@@ -170,14 +186,17 @@ function unitOpen(u) {
 function unitDue(u, t) { t = t || Date.now(); return u.qids.filter(function (id) { return isDue(id, t); }).length; }
 function allDue() { var t = Date.now(); return DD.units.filter(unitOpen).reduce(function (a, u) { return a.concat(u.qids.filter(function (id) { return isDue(id, t); })); }, []); }
 function countMastered() { var n = 0; for (var k in S.items) if (S.items[k].b >= MASTER_BOX) n++; return n; }
-function knowledgePower() { var p = 0; for (var k in S.items) p += BOX_POINTS[Math.min(S.items[k].b, 6)]; return p; }
+function knowledgePower() { var p = 0; for (var k in S.items) p += BOX_POINTS[Math.min(S.items[k].b, 6)]; return p + 5 * chSolvedCount(); }
 function trackStats(t) { var us = TRACK_UNITS[t] || [], n = 0, m = 0, seen = 0; us.forEach(function (u) { u.qids.forEach(function (id) { n++; var b = item(id).b; if (b >= MASTER_BOX) m++; if (b > 0) seen++; }); }); return { n: n, mastered: m, seen: seen, mastery: us.length ? us.reduce(function (a, u) { return a + unitMastery(u) * u.qids.length; }, 0) / n : 0 }; }
 function tierUnits(T) { return DD.units.filter(function (u) { return u.tier === T; }); }
 function tierStatus(T) {
   var us = tierUnits(T), learned = us.filter(unitLearned).length, n = 0, s = 0;
   us.forEach(function (u) { u.qids.forEach(function (id) { n++; s += Math.min(item(id).b, MASTER_BOX); }); });
   var mastery = n ? s / (n * MASTER_BOX) : 0, cd = (S.bossCd[T] || 0) - Date.now();
-  return { units: us.length, learned: learned, mastery: mastery, need: BOSS_MASTERY, ready: learned === us.length && mastery >= BOSS_MASTERY && S.tier === T - 1, cooldown: cd > 0 ? cd : 0, beaten: S.tier >= T };
+  var cs = tierChallenges(T), cSolved = cs.filter(function (c) { return chSolved(c.id); }).length, cNeed = Math.ceil(cs.length * BOSS_BUILD);
+  var bossCh = CHD.list.filter(function (c) { return c.boss === T; })[0];
+  return { units: us.length, learned: learned, mastery: mastery, need: BOSS_MASTERY, chN: cs.length, chSolved: cSolved, chNeed: cNeed, bossCh: bossCh, bossChDone: !bossCh || chSolved(bossCh.id),
+    ready: cSolved >= cNeed && mastery >= BOSS_MASTERY && S.tier === T - 1, cooldown: cd > 0 ? cd : 0, beaten: S.tier >= T };
 }
 
 // ---------- sessions ----------
@@ -211,7 +230,7 @@ function pickBoss(T) {
   // weight weaker items
   ids = shuffle(ids).sort(function (a, b) { return item(a).b - item(b).b + (Math.random() - 0.5) * 3; });
   var tier = DD.tiers[T - 1];
-  return { kind: 'boss', tierN: T, queue: shuffle(ids.slice(0, BOSS_LEN)), title: tier.bossIcon + ' ' + tier.boss, hp: BOSS_LEN - BOSS_FOCUS, maxHp: BOSS_LEN - BOSS_FOCUS, focus: BOSS_FOCUS };
+  return { kind: 'boss', tierN: T, queue: shuffle(ids.slice(0, BOSS_LEN)), title: tier.bossIcon + ' ' + tier.boss, hp: BOSS_HP, maxHp: BOSS_HP, focus: BOSS_FOCUS };
 }
 function startSession(sess) {
   sess.i = 0; sess.right = 0; sess.wrong = 0; sess.xp = 0; sess.insight = 0; sess.combo = 0; sess.shieldUsed = false; sess.retry = {}; sess.retryAt = {}; sess.t0 = Date.now(); sess.newCount = 0; sess.drops = [];
@@ -224,7 +243,7 @@ function xpMult() { var m = 1 + 0.05 * lv('xp'); if (hasRelic('duck')) m *= 1.25
 function insightMult() { var m = 1; if (hasRelic('brain')) m *= 2; if (hasRelic('semi')) m *= 2; return m; }
 function comboMax() { return 0.5 + 0.1 * lv('combo'); }
 function luck() { return 1 + 0.1 * lv('luck'); }
-function hintCap() { return 3 + lv('hintCap') + (hasRelic('scroll') ? 2 : 0); }
+function hintCap() { return 3 + lv('hintCap') + (hasRelic('scroll') ? 2 : 0) + (hasRelic('prism') ? 1 : 0); }
 function hintEvery() { return 3 * HOUR * Math.pow(0.88, lv('hintRegen')) / (hasRelic('scroll') ? 2 : 1); }
 function relicOdds(r) { return Math.max(1, Math.round(r.odds / luck())); }
 function rollRelic(src, sess) {
@@ -300,6 +319,7 @@ function finishSession(sess) {
 // ---------- daily / streak ----------
 var DAILY_GOAL_XP = 200;
 var DEEDS = [
+  { id: 'bld', ic: '🔨', txt: 'Solve 2 hands-on challenges', f: function () { return (S.daily.builds || 0) >= 2; }, r: 20 },
   { id: 'les', ic: '📘', txt: 'Finish 2 lessons', f: function () { return S.daily.lessons >= 2; }, r: 15 },
   { id: 'rev', ic: '🔁', txt: 'Answer 10 reviews', f: function () { return S.daily.reviews >= 10; }, r: 15 },
   { id: 'cmb', ic: '🔥', txt: 'Hit a 10 combo', f: function () { return S.daily.combo >= 10; }, r: 20 }
@@ -307,7 +327,7 @@ var DEEDS = [
 function rollDay() {
   var today = dayKey(Date.now());
   if (S.daily.day === today) return;
-  S.daily = { day: today, xp: 0, lessons: 0, reviews: 0, combo: 0, claimed: {}, goal: false };
+  S.daily = { day: today, xp: 0, lessons: 0, reviews: 0, builds: 0, combo: 0, claimed: {}, goal: false };
   // streak breaks if last goal day is older than yesterday
   if (S.streak.last && dayDiff(S.streak.last, today) > 1) {
     var missed = dayDiff(S.streak.last, today) - 1;
@@ -409,6 +429,72 @@ function offlineCatchup() {
 // ---------- achievements ----------
 function checkAch() { var got = []; ACH.forEach(function (a) { if (!S.ach[a.id] && a.f(S)) { S.ach[a.id] = Date.now(); got.push(a); S.insight += 10; } }); if (got.length && root.UI) got.forEach(function (a) { root.UI.achievement(a); }); return got; }
 
+// ---------- hands-on challenges ----------
+var CH_TRACK = {}; CHD.list.forEach(function (c) { if (c.boss) return; (CH_TRACK[c.t] = CH_TRACK[c.t] || []).push(c); });
+Object.keys(CH_TRACK).forEach(function (t) { CH_TRACK[t].forEach(function (c, i) { c.order = i; }); });
+var CH_TRACK_BY_ID = {}; CHD.tracks.forEach(function (t) { CH_TRACK_BY_ID[t.id] = t; });
+function chState(id) { return S.ch[id] || null; }
+function chSolved(id) { var c = S.ch[id]; return !!(c && c.solved); }
+function chSolvedCount() { var n = 0; for (var k in S.ch) if (S.ch[k].solved && CHD.byId[k] && !CHD.byId[k].boss) n++; return n; }
+function tierChallenges(T) { return CHD.list.filter(function (c) { return c.tier === T && !c.boss; }); }
+function chTrackUnlocked(t) { var d = CH_TRACK_BY_ID[t]; if (!d) return false; var first = (CH_TRACK[t] || [])[0]; if (!first || first.tier > S.tier + 1) return false; return chSolvedCount() >= d.need; }
+function chOpen(c) {
+  if (c.boss) { var st = tierStatus(c.boss); return st.ready || st.beaten || chSolved(c.id); }
+  if (chSolved(c.id)) return true;
+  if (!chTrackUnlocked(c.t) || c.tier > S.tier + 1) return false;
+  var list = CH_TRACK[c.t]; return c.order === 0 || chSolved(list[c.order - 1].id);
+}
+function chWhyLocked(c) {
+  if (c.boss) return 'Solve ' + Math.round(BOSS_BUILD * 100) + '% of Tier ' + c.boss + ' challenges and reach ' + Math.round(BOSS_MASTERY * 100) + '% quiz mastery.';
+  if (c.tier > S.tier + 1) return 'Beat the Tier ' + (c.tier - 1) + ' boss first.';
+  if (!chTrackUnlocked(c.t)) return 'Solve ' + CH_TRACK_BY_ID[c.t].need + ' challenges anywhere to unlock this track.';
+  return 'Solve the previous challenge first.';
+}
+function chTrackStats(t) { var l = CH_TRACK[t] || []; return { n: l.length, solved: l.filter(function (c) { return chSolved(c.id); }).length }; }
+function chNext() { // a good next challenge for "Today"
+  var best = null;
+  CHD.tracks.forEach(function (t) { (CH_TRACK[t.id] || []).forEach(function (c) { if (!best && chOpen(c) && !chSolved(c.id)) best = c; }); });
+  return best;
+}
+function chXpBase(c) { return 40 + 20 * c.tier + (c.boss ? 200 * c.boss : 0); }
+function chRecord(c, info) { // info: {vals, code, hintLv, runs, typed}
+  var t = Date.now(), st = S.ch[c.id] || (S.ch[c.id] = { runs: 0, hintLv: 0 });
+  rollDay();
+  st.runs = (st.runs || 0) + 0; st.vals = info.vals; st.code = info.code; st.typed = !!info.typed;
+  var first = !st.solved, r = { first: first, xp: 0, insight: 0, drops: [], newTerms: [] };
+  var hl = Math.max(st.hintLv || 0, info.hintLv || 0);
+  var mult = xpMult() * (hasRelic('anvil') ? 1.3 : 1);
+  if (first) {
+    st.solved = t; st.solvedRuns = st.runs;
+    var x = chXpBase(c), firstRun = st.runs <= 1 && hl === 0;
+    if (firstRun) x *= hasRelic('forge') ? 1.5 : 1.25;
+    if (hl === 2) x *= 0.75; else if (hl >= 3) x *= 0.4;
+    S.chCombo = hl >= 2 ? 0 : (S.chCombo || 0) + 1;
+    x *= 1 + Math.min(0.5, 0.05 * Math.max(0, S.chCombo - 1));
+    r.xp = Math.round(x * mult); r.insight = Math.round((5 + 2 * c.tier) * insightMult()); r.firstRun = firstRun; r.combo = S.chCombo;
+    S.stats.challenges = (S.stats.challenges || 0) + 1; if (firstRun) S.stats.firstRun = (S.stats.firstRun || 0) + 1; if (!hl) S.stats.noHint = (S.stats.noHint || 0) + 1;
+    S.daily.builds = (S.daily.builds || 0) + 1;
+    if (hl < 3) { r.drops = r.drops.concat(rollRelic('challenge'), rollRelic('lesson')); if (firstRun) r.drops = r.drops.concat(rollRelic('firstrun')); if (!hl) r.drops = r.drops.concat(rollRelic('perfect')); }
+    ((c.learn && c.learn.terms) || []).forEach(function (term) { if (DD.glossary[term] && !S.gloss[term]) { S.gloss[term] = t; r.newTerms.push(term); } });
+  } else { r.xp = Math.round(chXpBase(c) * 0.2 * mult); r.insight = 1; }
+  S.xp += r.xp; S.insight += r.insight; S.daily.xp += r.xp; S.txp['c:' + c.t] = (S.txp['c:' + c.t] || 0) + r.xp;
+  checkDailyGoal(); r.ach = checkAch(); save();
+  return r;
+}
+function chRun(c) { var st = S.ch[c.id] || (S.ch[c.id] = { runs: 0, hintLv: 0 }); st.runs = (st.runs || 0) + 1; save(); return st.runs; }
+function chHint(c, level) { var st = S.ch[c.id] || (S.ch[c.id] = { runs: 0, hintLv: 0 }); if (!st.solved) st.hintLv = Math.max(st.hintLv || 0, level); save(); return st.hintLv; }
+function chExplore(c, key) { // reward distinct experiments
+  var st = S.ch[c.id] || (S.ch[c.id] = { runs: 0, hintLv: 0 }); st.ex = st.ex || [];
+  if (st.ex.indexOf(key) >= 0 || st.ex.length >= Math.max(6, (c.explore || 0) * 2)) return null;
+  st.ex.push(key); S.stats.experiments = (S.stats.experiments || 0) + 1;
+  var xp = Math.round(4 * xpMult() * (hasRelic('prism') ? 2 : 1)); S.xp += xp; S.daily.xp += xp;
+  var drops = rollRelic('explore'); checkDailyGoal(); checkAch(); save();
+  return { xp: xp, n: st.ex.length, drops: drops };
+}
+function projSteps(pid) { return CHD.list.filter(function (c) { return c.proj && c.proj[0] === pid; }).sort(function (a, b) { return a.proj[1] - b.proj[1]; }); }
+function projProgress(pid) { var st = projSteps(pid); return { n: st.length, done: st.filter(function (c) { return chSolved(c.id); }).length, steps: st }; }
+function projDoneCount() { return CHD.projects.filter(function (p) { var g = projProgress(p.id); return g.n && g.done === g.n; }).length; }
+
 // ---------- check answers ----------
 function check(qid, resp) {
   var q = Q[qid].raw, type = q[0];
@@ -438,6 +524,7 @@ root.Game = {
   levelInfo: levelInfo, trackLevel: trackLevel, rank: rank, item: item, unitMastery: unitMastery, unitLearned: unitLearned, unitMasteredAll: unitMasteredAll, unitOpen: unitOpen, unitDue: unitDue, allDue: allDue, trackUnlocked: trackUnlocked, trackStats: trackStats, tierStatus: tierStatus, learnedCount: learnedCount, countMastered: countMastered, knowledgePower: knowledgePower,
   pickLesson: pickLesson, pickReview: pickReview, pickBoss: pickBoss, startSession: startSession, answer: answer, finishSession: finishSession, check: check, correctText: correctText, explanation: explanation,
   rollDay: rollDay, claimDeed: claimDeed, useHint: useHint, tickHints: tickHints, hintCap: hintCap, hintEvery: hintEvery, cost: cost, canBuy: canBuy, buy: buy, lv: lv, hasRelic: hasRelic, relicOdds: relicOdds, relicCount: relicCount,
-  tick: tick, ensureTickets: ensureTickets, claimTicket: claimTicket, ticketSpeed: ticketSpeed, workSpeed: workSpeed, coinMult: coinMult, slots: slots, offRate: offRate, offCap: offCap, repLevel: repLevel, ticketLevelCap: ticketLevelCap, offlineCatchup: offlineCatchup, checkAch: checkAch, xpMult: xpMult, xpFor: xpFor, txpFor: txpFor
+  tick: tick, ensureTickets: ensureTickets, claimTicket: claimTicket, ticketSpeed: ticketSpeed, workSpeed: workSpeed, coinMult: coinMult, slots: slots, offRate: offRate, offCap: offCap, repLevel: repLevel, ticketLevelCap: ticketLevelCap, offlineCatchup: offlineCatchup, checkAch: checkAch, xpMult: xpMult, xpFor: xpFor, txpFor: txpFor,
+  CHD: CHD, CH_TRACK: CH_TRACK, chState: chState, chSolved: chSolved, chSolvedCount: chSolvedCount, chOpen: chOpen, chWhyLocked: chWhyLocked, chTrackUnlocked: chTrackUnlocked, chTrackStats: chTrackStats, chNext: chNext, chRecord: chRecord, chRun: chRun, chHint: chHint, chExplore: chExplore, chXpBase: chXpBase, tierChallenges: tierChallenges, projSteps: projSteps, projProgress: projProgress, projDoneCount: projDoneCount, BOSS_BUILD: BOSS_BUILD
 };
 })(typeof window !== 'undefined' ? window : globalThis);

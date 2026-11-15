@@ -1,0 +1,63 @@
+// Debugging track: read errors, follow stack traces, step through code, write tests
+CH({ id: 'd-ref', t: 'dbg', tier: 1, sb: 'js', icon: '🔴', title: 'Read the red text', view: 'console',
+  story: 'Run it first and read the error. It names the exact problem and the line. Fix it so the receipt total prints 28.62.',
+  code: L('const prices = [9.99, 4.5, 14.13];', 'let total = 0;', 'for (const p of prices) {', '  total += p;', '}', 'console.log("Total:", {{v}}.toFixed(2));'), slots: { v: ['totl', 'Total', 'prices', 'total'] }, sol: { v: 'total' },
+  goals: [['It prints Total: 28.62', "log === 'Total: 28.62'"]],
+  hints: ['"X is not defined" means there is no variable with exactly that name.'],
+  learn: { h: 'ReferenceError', x: '`ReferenceError: totl is not defined` means you used a name that was never declared, usually a typo. Names are case-sensitive, so `Total` is a different variable.\n\nThe first habit of a good debugger is to **read the whole error message**. It usually says what went wrong and on which line. `prices.toFixed` is a TypeError instead: the name exists, but that value has no such method.', terms: ['reference-error', 'error-message'] } });
+CH({ id: 'd-undef', t: 'dbg', tier: 1, sb: 'js', icon: '❓', title: 'Where did undefined come from?', view: 'console',
+  story: 'This should greet user 2, Bo, but it prints "Hello, undefined". The id comes from a URL, so it is text. Find the mismatch.',
+  code: L('const users = { 1: "Ava", 2: "Bo" };', 'const idFromUrl = "2";', 'const list = [{ id: 1, name: "Ava" }, { id: 2, name: "Bo" }];', '', 'const match = list.find(u => u.id === {{id}});', 'console.log("Hello, " + (match && match.name));'), slots: { id: ['idFromUrl', '"idFromUrl"', 'idFromUrl.length', 'Number(idFromUrl)'] }, sol: { id: 'Number(idFromUrl)' },
+  goals: [['It prints Hello, Bo', "log === 'Hello, Bo'"]],
+  hints: ['`===` checks the type as well as the value. `2 === "2"` is false.', 'Convert the text to a number first.'],
+  learn: { h: 'Silent type mismatches', x: 'Data from URLs, forms and files arrives as **strings**. `2 === "2"` is false, so `find` returns `undefined` with no error, and the bug surfaces somewhere else entirely. Convert at the boundary with `Number(...)`.\n\nWhen you see `undefined`, ask: "Where should this value have come from, and what was its type?"', terms: ['data-type', 'strict-equality'] } });
+CH({ id: 'd-stack', t: 'dbg', tier: 1, sb: 'js', icon: '🥞', title: 'Follow the stack trace', view: 'console',
+  story: 'It crashes deep inside a helper. The stack trace below the error lists each function call, newest first. Follow it down to the code that passed bad data, and fix the data.',
+  code: L('function initials(name) {', '  return name.split(" ").map(w => w[0]).join("");', '}', 'function badge(user) {', '  return "[" + initials(user.name) + "]";', '}', 'function render(users) {', '  return users.map(badge).join(" ");', '}', 'const users = [', '  { name: "Ava Lin" },', '  { {{k}}: "Bo Diaz" }', '];', 'console.log(render(users));'), slots: { k: ['nmae', 'Name', 'name'] }, sol: { k: 'name' },
+  goals: [['It prints [AL] [BD]', "log === '[AL] [BD]'"]],
+  hints: ['The error happens in `initials`, but `initials` is not where the bug is.', 'Look at the data on line 12.'],
+  learn: { h: 'Stack traces', x: 'A **stack trace** lists the chain of calls: `initials` ← `badge` ← `render` ← the top level. The crash is at the top of the list, but the **cause** is often further down. Here the data has a typo, `nmae`, so `user.name` is undefined and `undefined.split` crashes.\n\nPros read the whole stack, then ask where the bad value was born.', terms: ['stack-trace', 'call-stack'] } });
+CH({ id: 'd-step', t: 'dbg', tier: 2, sb: 'js', icon: '👣', title: 'Step through a loop', view: 'console', trace: ['i', 'sum', 'scores[i]'],
+  story: 'The average comes out NaN. Run it, then tap ⏭ to step through and watch `i` and `scores[i]` each lap. You will see the lap where things go wrong.',
+  code: L('const scores = [80, 90, 70];', 'let sum = 0;', 'for (let i = 0; i {{op}} scores.length; i++) {', '  sum += scores[i];', '}', 'const avg = sum / scores.length;', 'console.log("Average:", avg);'), slots: { op: ['<=', '!=', '<'] }, sol: { op: '<' },
+  goals: [['Average: 80', "log === 'Average: 80'"]],
+  hints: ['Watch `scores[i]` on the last lap. What index does a 3-item array end at?', 'Use `<`.'],
+  learn: { h: 'Stepping and off-by-one', x: 'With `<=`, the loop runs with `i = 3`, and `scores[3]` is `undefined`. `80 + 90 + 70 + undefined` is **NaN** (Not a Number), and NaN infects everything it touches.\n\nA debugger lets you pause and step line by line, watching variables. In real tools this is a **breakpoint** in Chrome DevTools or VS Code. It beats guessing.', terms: ['breakpoint', 'off-by-one', 'nan'] } });
+CH({ id: 'd-pystep', t: 'dbg', tier: 2, sb: 'py', icon: '🐍', title: 'Python: the early return', trace: ['n', 'total'],
+  story: '`total_of([1, 2, 3])` should be 6, but it returns 1. Step through it and watch when the function exits.',
+  code: L('def total_of(nums):', '    total = 0', '    for n in nums:', '        total += n', '{{ind}}return total', '', 'print(total_of([1, 2, 3]))'), slots: { ind: { o: ['        ', '    '], l: ['8 spaces (inside the loop)', '4 spaces (after the loop)'] } }, sol: { ind: '    ' },
+  goals: [['total_of([1, 2, 3]) is 6', "total_of([1, 2, 3]) == 6"]],
+  hints: ['If `return` is inside the loop, the function ends after the first lap.'],
+  learn: { h: 'Indentation bugs', x: 'In Python, indentation **is** logic. `return` indented inside the `for` returns on the first lap. The stepper shows the function exiting after one pass.\n\nThis bug never crashes. It is just wrong, which is why stepping through code (or writing a test) matters.', terms: ['indentation', 'breakpoint'] } });
+CH({ id: 'd-off1', t: 'dbg', tier: 2, sb: 'js', icon: '📄', title: 'Missing last page', view: 'console',
+  story: '23 search results, 10 per page. The app says 2 pages, so 3 results are unreachable. Fix the page count.',
+  code: L('function pages(total, perPage) {', '  return Math.{{f}}(total / perPage);', '}', 'console.log(pages(23, 10), pages(20, 10), pages(0, 10));'), slots: { f: ['floor', 'round', 'ceil'] }, sol: { f: 'ceil' },
+  goals: [['23 → 3 pages', "pages(23, 10) === 3"], ['20 → exactly 2', "pages(20, 10) === 2"], ['21 → 3', "pages(21, 10) === 3"]],
+  hints: ['A partial page still needs a page.', '`round` gets 25 right and 21 wrong.'],
+  learn: { h: 'Edge cases', x: '`floor` drops the partial page, and `round` only works for some totals. `ceil` always rounds up. Test with the **edges**: an exact multiple (20), one over (21) and zero.\n\nThe bug only shows up for certain inputs. That is why testing a few chosen cases beats testing one happy case.', terms: ['edge-case', 'off-by-one'] } });
+CH({ id: 'd-test1', t: 'dbg', tier: 2, sb: 'js', icon: '🧪', title: 'Write a test that catches the bug', view: 'console',
+  pre: 'window.isEmail = function (s) { return s.indexOf("@") > 0; };',
+  story: 'A teammate wrote `isEmail()`, and it has a bug: it accepts things like "noah@". Add a test case that **fails** on this buggy version and exposes it.',
+  code: L('function test(input, expected) {', '  const got = isEmail(input);', '  console.log((got === expected ? "✅ PASS" : "❌ FAIL") + "  isEmail(" + JSON.stringify(input) + ") → " + got);', '  return got === expected;', '}', 'test("noah@example.com", true);', 'test("not an email", false);', 'test({{t}});'), slots: { t: ['"ava@site.org", true', '"", false', '"@example.com", false', '"noah@", false'] }, sol: { t: '"noah@", false' },
+  goals: [['Your new test fails on the buggy code', "/FAIL/.test(logs[2] || '')"]],
+  hints: ['A good test targets the bug, not the cases that already work.', 'The function only checks for an @ somewhere after the first character.'],
+  learn: { h: 'Tests that fail first', x: 'A test that passes on buggy code proves nothing. Pros write a test that **reproduces** the bug (red), then fix the code until it passes (green). That is test-driven debugging.\n\nThe other options were valid inputs, but the buggy function already handled them correctly.', terms: ['unit-test', 'regression'] } });
+CH({ id: 'd-test2', t: 'dbg', tier: 2, sb: 'js', icon: '🟢', title: 'Now make it green', view: 'console',
+  story: 'Fix `isEmail` so every test passes. The tests are the spec.',
+  code: L('function isEmail(s) {', '  return {{rule}};', '}', 'const cases = [["noah@example.com", true], ["not an email", false], ["noah@", false], ["@example.com", false], ["a@b.co", true]];', 'let ok = 0;', 'for (const [input, want] of cases) {', '  const got = isEmail(input);', '  console.log((got === want ? "✅" : "❌") + " " + JSON.stringify(input) + " → " + got);', '  if (got === want) ok++;', '}', 'console.log(ok + "/" + cases.length + " passing");'), slots: { rule: ['s.includes("@")', 's.indexOf("@") > 0', 's.endsWith(".com")', '/^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$/.test(s)'] }, sol: { rule: '/^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$/.test(s)' },
+  goals: [['5/5 passing', "log.indexOf('5/5 passing') >= 0"]],
+  hints: ['You need text, then @, then text, a dot and more text.', 'The regular expression.'],
+  learn: { h: 'Regular expressions', x: '`/^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$/` reads as: start, one or more non-@ non-space characters, @, more of them, a dot, more of them, end. Regex is a mini-language for text patterns, used in search, validation and find-and-replace.\n\nNo regex perfectly validates email. In real apps you also send a confirmation link.', terms: ['regex', 'unit-test'] } });
+CH({ id: 'd-pyerr', t: 'dbg', tier: 2, sb: 'py', icon: '📜', title: 'No error, still wrong', inputs: ['YES'],
+  story: 'The user typed "YES" and the program said no. There is no crash this time, so the bug is in the comparison. Make answers count regardless of capitals.',
+  code: L('answer = input("Continue? ")', 'if answer{{m}} == "yes":', '    print("Continuing!")', 'else:', '    print("Stopped.")'), slots: { m: { o: ['', '.upper()', '.lower()'], l: ['(nothing)', '.upper()', '.lower()'] } }, sol: { m: '.lower()' },
+  goals: [['It continues for YES', "'Continuing!' in _out"]],
+  hints: ['Compare in one consistent case.'],
+  learn: { h: 'Normalize before comparing', x: 'String comparison is exact: `"YES" == "yes"` is False. Normalize first with `.lower()` (and often `.strip()`). `.upper()` gives "YES", which does not equal "yes".\n\nBugs with no error message are found by checking your assumptions: print the value with `repr()` and compare.', terms: ['string'] } });
+CH({ id: 'd-async', t: 'dbg', tier: 3, sb: 'js', icon: '⏱️', title: 'The race condition', view: 'console', delay: 500,
+  mock: { '/api/cart': { body: { items: 3 } } },
+  story: 'The cart badge shows 0 even though the server says 3. Look at the order of the logs, because the code does not run top to bottom the way it reads.',
+  code: L('let count = 0;', 'async function loadCart() {', '  const res = await fetch("/api/cart");', '  count = (await res.json()).items;', '  console.log("2. loaded:", count);', '}', 'async function main() {', '  {{a}}loadCart();', '  console.log("3. badge shows:", count);', '}', 'console.log("1. start");', 'main();'), slots: { a: { o: ['', 'await '], l: ['(no await)', 'await'] } }, sol: { a: 'await ' },
+  goals: [['The badge shows 3', "logs.indexOf('3. badge shows: 3') >= 0"], ['Logs are in order 1, 2, 3', "logs.map(function(l){return l[0];}).join('') === '123'"]],
+  hints: ['Without await, main keeps going while the fetch is still in flight.'],
+  learn: { h: 'Async ordering', x: 'Without `await`, `loadCart()` starts the fetch and **returns immediately**. The badge line ran first, with `count` still 0, and the data landed later. The log order 1, 3, 2 gave it away.\n\nTiming bugs like this are called **race conditions**. Print logs with numbers when something "should" have a value but does not.', terms: ['race-condition', 'async-await'] } });
