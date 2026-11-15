@@ -8,7 +8,7 @@ function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function
 function md(s) { // tiny markdown: `code`, **bold**, paragraphs
   return String(s || '').split(/\n\n+/).map(function (p) { return '<p>' + esc(p).replace(/`([^`]+)`/g, '<code>$1</code>').replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>').replace(/\n/g, '<br>') + '</p>'; }).join('');
 }
-var TRK = {}; CHD.tracks.forEach(function (t) { TRK[t.id] = t; });
+var TRK = {}; CHD.tracks.forEach(function (t) { TRK[t.id] = t; }); TRK.bot = { id: 'bot', icon: '🤖', name: 'Your Bot', color: '#818cf8' };
 var PRJ = {}; CHD.projects.forEach(function (p) { PRJ[p.id] = p; });
 var SBNAME = { html: '🧱 Live page', js: '⚡ JavaScript', py: '🐍 Python', sql: '🗄️ SQLite', git: '🌿 Terminal', cmp: '⚙️ Compiler', ai: '🤖 AI assistant' };
 var LANG = { cpp: { file: 'main.cpp', tool: 'clang++ (C++17)', run: './main' }, java: { file: 'Main.java', tool: 'javac + java 21', run: 'java Main' }, rust: { file: 'main.rs', tool: 'rustc 1.85', run: './main' }, go: { file: 'main.go', tool: 'go 1.27', run: 'go run' }, ts: { file: 'main.ts', tool: 'tsc 7 (strict)', run: 'node main.js' }, bash: { file: 'script.sh', tool: 'bash 5', run: 'bash script.sh' }, py: { file: 'main.py', tool: 'python 3.13', run: 'python3 main.py' }, js: { file: 'main.js', tool: 'node 24', run: 'node main.js' } };
@@ -211,7 +211,7 @@ function win() {
   r.drops.forEach(function (dr) { h += '<div class="card" style="border-color:var(--gold);text-align:center"><div style="font-size:40px">' + dr.ic + '</div><b>RELIC: ' + esc(dr.name) + '</b><div class="muted">' + esc(dr.eff) + '</div></div>'; });
   if (ch.proj) { var pg = G.projProgress(ch.proj[0]); h += '<div class="card"><b>' + PRJ[ch.proj[0]].icon + ' ' + esc(PRJ[ch.proj[0]].name) + '</b> · step ' + pg.done + '/' + pg.n + (pg.done === pg.n ? ' <b style="color:var(--good)">COMPLETE!</b>' : '') + '<div class="tiny">See it any time in 🏗️ Workshop.</div></div>'; }
   if (ch.bot && r.first) { var bs1 = G.botStats(), pc = function (x) { return Math.round(x * 100) + '%'; }; h += '<div class="card botDelta"><b>🤖 Module installed: ' + esc(ch.title) + '</b><div class="tiny">' + esc(ch.bot.eff) + '</div><div class="stats3"><div class="stat"><small>Success</small><b>' + pc(bs0.success) + ' → ' + pc(bs1.success) + '</b></div><div class="stat"><small>Tasks/hr</small><b>' + bs0.tph + ' → ' + bs1.tph + '</b></div><div class="stat"><small>🪙/hr</small><b>' + bs0.coinsPerHr + ' → ' + bs1.coinsPerHr + '</b></div></div><div class="tiny">See it run in 🤖 Your Bot.</div></div>'; }
-  if (ch.boss) h += '<div class="card"><b>⚔️ Boss challenge cleared!</b><div class="muted">Final step: the boss review exam on the 🔨 Build home page.</div></div>';
+  if (ch.boss) h += '<div class="card"><b>⚔️ Boss challenge cleared!</b><div class="muted">Final step: the 🎯 mastery exam on the 🔨 Build home page.</div></div>';
   var nx = nextAfter(ch);
   h += '<div class="row" style="gap:8px;margin-top:12px"><button class="btn ghost grow" data-act="chkeep">🔬 Keep tinkering</button>' + (nx ? '<button class="btn grow" data-act="chnext" data-v="' + nx.id + '">Next ▶</button>' : '<button class="btn grow" data-act="chquit">Done</button>') + '</div>' + (nx ? '<div class="tiny" style="text-align:center;margin-top:6px">Next: ' + (nx.icon || '') + ' ' + esc(nx.title) + '</div>' : '') + '</div>';
   var d = $('#cpDone'); d.innerHTML = h; d.classList.remove('hidden'); d.scrollTop = 0;

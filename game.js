@@ -161,7 +161,7 @@ function botStats() {
   e.parse = h('bm-parse') ? 0.02 : 0.28; e.context = h('bm-context') ? 0 : 0.05;
   var acc = 0.5 + (h('bm-route') ? 0.12 : 0) + (h('bm-sysprompt') ? 0.12 : 0) + (h('bm-fewshot') ? 0.07 : 0) + (h('bm-fail') ? 0.05 : 0) + (h('bm-temp') ? 0.03 : 0) + (h('bm-split') ? 0.03 : 0) + (h('bm-overfit') ? 0.04 : 0) + (h('bm-confusion') ? 0.02 : 0);
   st.acc = Math.min(0.97, acc); st.kbAcc = Math.min(0.97, st.acc + (h('bm-rag') ? 0.1 : -0.25));
-  e.transient = h('bm-retry') ? 0.02 : h('bm-tool') ? 0.18 : 0.3; e.rate = h('bm-rate') ? 0 : h('bm-retry') ? 0.05 : 0.1; e.auth = h('bm-secrets') ? 0 : 0.07; e.args = h('bm-schema') ? 0.01 : 0.1; e.perm = h('bm-perms') ? 0 : 0.03;
+  e.transient = h('bm-retry') ? 0.02 : h('bm-tool') ? 0.12 : 0.2; e.rate = h('bm-rate') ? 0 : h('bm-retry') ? 0.05 : 0.1; e.auth = h('bm-secrets') ? 0 : 0.07; e.args = h('bm-schema') ? 0.01 : 0.1; e.perm = h('bm-perms') ? 0 : 0.03;
   e.inject = h('bm-guard') ? 0.002 : 0.05; e.regress = h('bm-tests') ? 0.01 : 0.08; e.risky = h('bm-hitl') ? 0 : 0.1;
   st.err = e;
   st.uptime = Math.min(0.995, 0.85 + (h('bm-log') ? 0.06 : 0) + (h('bm-monitor') ? 0.07 : 0));

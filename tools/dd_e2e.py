@@ -118,8 +118,8 @@ with sync_playwright() as p:
     ctx=b.new_context(viewport={'width':390,'height':844}); ctx.add_init_script("if(!sessionStorage.getItem('seeded')){localStorage.setItem('dnd-dev-save-v1', %s); sessionStorage.setItem('seeded','1');}" % json.dumps(v1))
     pg=ctx.new_page(); attach(pg,'migrate'); pg.goto(URL); pg.wait_for_timeout(1200); gate(pg)
     body=pg.locator('#modal').inner_text().lower()
-    ok=pg.evaluate("__DD.G.S.v===2 && __DD.G.S.coins===777 && __DD.G.S.xp===1234 && typeof __DD.G.S.ch==='object'")
-    rec('v1 save migrates (v2 announce modal, data kept)', ok and 'build' in body, body[:100].replace('\n',' '))
+    ok=pg.evaluate("__DD.G.S.v===3 && __DD.G.S.coins===777 && __DD.G.S.xp===1234 && typeof __DD.G.S.ch==='object'")
+    rec('v1 save migrates to v3 (announce modal, data kept)', ok and ('build' in body or 'mastery' in body), body[:100].replace('\n',' '))
     pg.screenshot(path=SHOTS+'phone-v2-upgrade-notice.png')
     ctx.close()
     # ---------- DESKTOP ----------

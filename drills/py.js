@@ -58,7 +58,7 @@ D({ id: 'py.accum', t: 'py', sb: 'py', from: ['p-accum'], name: 'Accumulators', 
 D({ id: 'py.break', t: 'py', sb: 'py', from: ['p-break'], name: 'break vs continue', icon: '⛔', gen: function (R) {
   var nums = [R.int(1, 9), R.int(1, 9), -R.int(1, 9), R.int(1, 9), -R.int(1, 9), R.int(1, 9)], stop = R.f() < 0.5, kw = stop ? 'break' : 'continue', out = [];
   for (var i = 0; i < nums.length; i++) { if (nums[i] < 0) { if (stop) break; continue; } out.push(nums[i]); }
-  return { tag: stop ? 'Stop at the first negative number' : 'Skip the negative numbers', code: J('nums = ' + pyList(nums), 'for n in nums:', '    if n < 0:', '        {{k}}', '    print(n)'), slots: { k: R.opts(kw, ['pass', stop ? 'continue' : 'break', 'return', 'stop']) }, sol: { k: kw },
+  return { tag: stop ? 'Stop at the first negative number' : 'Skip the negative numbers', code: J('nums = ' + pyList(nums), 'for n in nums:', '    if n < 0:', '        {{k}}', '    print(n)'), slots: { k: R.opts(kw, stop ? ['pass', 'continue'] : ['pass', 'break', 'return', 'stop']) }, sol: { k: kw },
     goals: [['Prints ' + out.join(', '), '_out == ' + pyOut(out)]], explain: '`break` leaves the loop entirely; `continue` skips to the next item; `pass` does nothing.' };
 } });
 D({ id: 'py.comp', t: 'py', sb: 'py', from: ['p-comp'], name: 'List comprehensions', icon: '🧺', gen: function (R) {
