@@ -30,9 +30,9 @@ function open(id) {
     '<div class="cpFoot" id="cpFoot"></div><div id="cpHidden" class="cpHidden"></div><div id="cpSheet" class="cpSheet hidden"></div><div id="cpDone" class="cpDone hidden"></div></div>';
   X().audioInit(); X().SFX.select();
   drawAll();
-  if (ch.sb === 'html') livePreview();
-  if (ch.sb === 'py') SB.pyLoad(function (s) { con('⏳ ' + s, 'sys'); }).then(function () { con('🐍 Python ' + 'is ready.', 'sys'); }, function (e) { if (!alive()) return; con('⚠️ ' + e.message, 'err'); });
-  if (ch.sb === 'sql') SB.sqlLoad(function (s) { setOut('<div class="muted">⏳ ' + esc(s) + '</div>'); }).then(function () { if (!P.res) setOut('<div class="muted">🗄️ SQLite is ready. Press ▶ Run to query the database.</div>'); }, function (e) { if (!alive()) return; setOut('<div class="cpErr">⚠️ ' + esc(e.message) + '</div>'); });
+  if (ch.sb === 'html') livePreview(); var me0 = P;
+  if (ch.sb === 'py') SB.pyLoad(function (s) { if (P === me0) con('⏳ ' + s, 'sys'); }).then(function () { if (P !== me0) return; con('🐍 Python ' + 'is ready.', 'sys'); }, function (e) { if (P !== me0) return; con('⚠️ ' + e.message, 'err'); });
+  if (ch.sb === 'sql') SB.sqlLoad(function (s) { if (P === me0) setOut('<div class="muted">⏳ ' + esc(s) + '</div>'); }).then(function () { if (P !== me0) return; if (!P.res) setOut('<div class="muted">🗄️ SQLite is ready. Press ▶ Run to query the database.</div>'); }, function (e) { if (P !== me0) return; setOut('<div class="cpErr">⚠️ ' + esc(e.message) + '</div>'); });
 }
 function close() {
   if (P && !P.won) { var st = G.chState(P.ch.id); if (st || P.runs) { G.S.ch[P.ch.id] = G.S.ch[P.ch.id] || { runs: 0, hintLv: 0 }; G.S.ch[P.ch.id].draft = P.vals; G.save(); } }
@@ -161,7 +161,7 @@ function run() {
       drawTurtle(r.segs || []);
       if (ch.trace) { P.steps = (r.steps || []).map(function (s) { return { l: s[0], v: s[1] }; }); if (P.steps.length) jumpBp(0, true); }
       done(r.res);
-    }, function (e) { con('⚠️ ' + e.message, 'err'); P.busy = false; P.runs--; drawFoot(); });
+    }, function (e) { if (!alive()) return; con('⚠️ ' + e.message, 'err'); P.busy = false; P.runs--; drawFoot(); });
   } else if (ch.sb === 'sql') {
     SB.runSql(ch, c, function (s) { if (alive()) setOut('<div class="muted">⏳ ' + esc(s) + '</div>'); }).then(function (r) {
       if (!alive()) return;
@@ -169,7 +169,7 @@ function run() {
       if (!r.results.length && !r.err) h += '<div class="muted">✔ Ran. (No rows returned.)</div>';
       r.results.forEach(function (t) { h += tableHTML(t.columns, t.values); });
       setOut(h); done(r.res);
-    }, function (e) { setOut('<div class="cpErr">⚠️ ' + esc(e.message) + '</div>'); P.busy = false; P.runs--; drawFoot(); });
+    }, function (e) { if (!alive()) return; setOut('<div class="cpErr">⚠️ ' + esc(e.message) + '</div>'); P.busy = false; P.runs--; drawFoot(); });
   } else if (ch.sb === 'cmp') {
     drawCmp(null); setTimeout(function () { if (!alive()) return; var r = SB.runCompiled(ch, P.vals); drawCmp(r); done(r.res); }, 450);
   } else if (ch.sb === 'ai') aiSend(done);

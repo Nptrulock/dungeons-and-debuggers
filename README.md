@@ -4,7 +4,24 @@ An educational incremental RPG for learning to **think like a developer in the a
 
 **Play:** https://nptrulock.github.io/dungeons-and-debuggers/
 
-## Core loop
+## v2: learn by building (🔨 Build tab)
+The main loop is now **198 hands-on challenges**. You change real code, run it, see the result live, and then a **"What you discovered"** card explains what you just found and unlocks glossary terms. Quizzes are still there as 📚 Review (spaced repetition) and boss exams.
+
+- **Sandboxes** (all phone-friendly: tap highlighted code chips to swap pieces, drag sliders with ± buttons, or ✏️ type freely):
+  - 🧱 **HTML/CSS:** a live iframe preview that updates as you change things.
+  - ⚡ **JavaScript:** console, page and canvas output, checked by tests. Includes a loop guard and a mock HTTP server for API work.
+  - 🐍 **Python:** real CPython via Pyodide, loaded lazily in a Web Worker, with turtle graphics, scripted `input()` and a line-by-line stepper.
+  - 🗄️ **SQL:** real SQLite via sql.js, with result tables and "Peek at the tables".
+  - 🌿 **Terminal & Git:** a simulated shell, Git and GitHub with a live commit graph, a file status view, PRs, Actions CI and Pages deploys.
+  - ⚙️ **Compiler:** C++, Java, Rust, Go, TypeScript, Bash and Python. Every output (errors included) was **recorded from the real toolchains** for every choice combination by `tools/build-compiled.js`. Adds a stack/heap memory visualizer with pointer arrows and same-idea-in-other-languages comparisons.
+  - 🤖 **AI assistant:** build a prompt from parts. The (pre-written) assistant replies with code that is **really run against tests**. Covers hallucinations, context, edge cases, reward hacking, XSS, agents and prompt injection.
+  - 🐞 **Debugging:** real error messages, stack traces mapped to your lines, and a breakpoint stepper.
+- **Hints ladder:** 💡 nudge (free) → 🔦 bigger hint (−25% XP) → 🗝️ solution (−60% XP, no relic). 🧪 Experiment zones reward every distinct thing you try.
+- **Projects** (results persist and replay in the 🏗️ Workshop): Personal Website (6 steps), To-Do App (5), Weather App (5), Python Text Adventure (5), Bookstore Database (5), Canvas Mini-Game (4), Ship It: deploy with CI (4).
+- **Bosses:** one per tier, built under constraints or run as live incidents (limited runs or commands), followed by the quiz boss exam.
+- Challenge files: `challenges/*.js`. Format: `challenges/core.js`.
+
+## Core loop (quiz and idle systems)
 - **Learn (active):** short quiz lessons in 11 formats:
   - multiple choice
   - predict the output
@@ -51,5 +68,9 @@ An educational incremental RPG for learning to **think like a developer in the a
 To add content, append `U(track, tier, id, name, icon, terms, [questions])` blocks. The format is documented in `data/core.js`.
 
 ## Checks
+- `python3 tools/dd_verify.py <sandboxes|ids|t:track>` (needs `python3 -m http.server 8765` running in the repo): runs every challenge headless and checks that the starting code **fails** and the reference solution **passes**. All 198 pass.
+- `node tools/simprog.js`: simulates unlock and tier rules to prove progression never deadlocks.
+- `node tools/build-compiled.js`: re-records compiler outputs (needs clang/zig, JDK 21, rustc, go, tsc, node, bash, python3).
+- `python3 tools/dd_e2e.py`: end-to-end phone (390×844) and desktop test. `tools/dd_offline.py` checks the offline fallback.
 - `node validate.js`: integrity of the question bank (answer indexes, blanks, pairs, explanations, glossary links, duplicates).
 - `node runsnips.js`: runs every JavaScript and Python "predict the output" snippet and prints the real output next to the keyed answer.
