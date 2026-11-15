@@ -52,7 +52,7 @@ function confStep() {
   parts.forEach(function (p) { p.vy += 0.3; p.vx *= 0.99; p.x += p.vx; p.y += p.vy; p.a += p.va; cx.save(); cx.translate(p.x, p.y); cx.rotate(p.a); cx.fillStyle = p.c; cx.globalAlpha = Math.min(1, p.life / 40); cx.fillRect(-p.r, -p.r / 2, p.r * 2, p.r); cx.restore(); });
   if (parts.length) requestAnimationFrame(confStep); else { confRunning = false; cx.clearRect(0, 0, innerWidth, innerHeight); }
 }
-function toast(html, cls) { var d = document.createElement('div'); d.className = 'toast ' + (cls || ''); d.innerHTML = html; $('#toasts').appendChild(d); setTimeout(function () { d.remove(); }, 3300); }
+function toast(html, cls) { var box = $('#toasts'); while (box.children.length >= 3) box.firstChild.remove(); var d = document.createElement('div'); d.className = 'toast ' + (cls || ''); d.innerHTML = html; $('#toasts').appendChild(d); setTimeout(function () { d.remove(); }, 3300); }
 function floatText(txt, x, y, color) { var d = document.createElement('div'); d.className = 'floatxp'; d.textContent = txt; d.style.left = (x - 30) + 'px'; d.style.top = (y - 20) + 'px'; if (color) d.style.color = color; document.body.appendChild(d); setTimeout(function () { d.remove(); }, 1000); }
 function modal(html) { var m = $('#modal'); m.innerHTML = '<div class="mbox">' + html + '</div>'; m.classList.remove('hidden'); }
 function closeModal() { $('#modal').classList.add('hidden'); $('#modal').innerHTML = ''; }
@@ -489,7 +489,7 @@ function flyCoins() { var d = $('#desk'); if (!d) return; for (var i = 0; i < 5;
 // ---------------- hooks from engine ----------------
 window.UI = {
   relicFound: function (r) { setTimeout(function () { SFX.relic(); confetti(200, ['#fbbf24', '#fde68a', '#f472b6', '#22d3ee']); toast('<span style="font-size:22px">' + r.ic + '</span> RELIC FOUND: <b>' + r.name + '</b><br><small>' + r.eff + '</small>', 'gold'); }, 300); },
-  achievement: function (a) { setTimeout(function () { SFX.coin(); toast(a.ic + ' Achievement: <b>' + a.name + '</b> (+10 💠)'); }, 600); },
+  achievement: function (a) { if (sess) return; setTimeout(function () { SFX.coin(); toast(a.ic + ' Achievement: <b>' + a.name + '</b> (+10 💠)'); }, 600); },
   dailyGoal: function (rew) { setTimeout(function () { SFX.done(); confetti(120); toast('🎯 Daily goal met! 🔥 Streak ' + G.S.streak.count + ' · +' + rew + ' 💠 · +1 💡', 'gold'); }, 500); }
 };
 

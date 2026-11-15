@@ -355,7 +355,7 @@ var TICKETS = {
 function ticketLevelCap() { return 2 + 2 * S.tier; }
 function repLevel() { return Math.min(ticketLevelCap(), 1 + Math.floor(Math.log2(1 + S.rep / 10))); }
 function workSpeed() {
-  var m = 1 + knowledgePower() * 0.02;
+  var m = 1 + knowledgePower() * 0.01;
   m *= 1 + 0.10 * lv('apply'); m *= 1 + 0.15 * lv('keyboard'); m *= 1 + 0.10 * lv('chair'); m *= 1 + 0.20 * lv('intern'); if (lv('cat')) m *= 1.05; if (hasRelic('kbd')) m *= 2;
   return m;
 }
@@ -369,7 +369,7 @@ function newTicket() {
   var tr = tracks[Math.floor(Math.random() * tracks.length)], L = repLevel();
   var names = TICKETS[tr], work = Math.round(40 * Math.pow(1.7, L - 1) * (0.8 + Math.random() * 0.4));
   S.work.seq++;
-  return { id: 'DEV-' + S.work.seq, track: tr, name: names[Math.floor(Math.random() * names.length)], L: L, work: work, done: 0, coins: Math.round(work * 0.25 * Math.pow(1.08, L - 1)), rep: L, finished: false };
+  return { id: 'DEV-' + S.work.seq, track: tr, name: names[Math.floor(Math.random() * names.length)], L: L, work: work, done: 0, coins: Math.max(1, Math.round(work * 0.15 * Math.pow(1.08, L - 1))), rep: L, finished: false };
 }
 function ensureTickets() { while (S.work.tickets.length < slots()) S.work.tickets.push(newTicket()); }
 function ticketSpeed(tk) { return workSpeed() * (1 + 0.05 * (trackLevel(tk.track).level - 1)); }
