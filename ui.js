@@ -72,7 +72,8 @@ function header() {
     '<span class="chip" title="Insight">💠 ' + fmt(S.insight) + '</span>' +
     '<span class="chip" title="Hint tokens">💡 ' + S.hints + '/' + G.hintCap() + '</span>' +
     '<span class="chip" title="Challenges built">🔨 ' + G.chSolvedCount() + '/' + G.CHD.list.length + '</span>' +
-    '<span class="chip" title="Knowledge mastered">🧠 ' + G.countMastered() + '/' + G.ALLQ.length + '</span>' +
+    '<span class="chip" title="Concepts practiced in Mastery">🎯 ' + G.practicedCount() + '/' + G.DRL.gens.length + '</span>' +
+    '<span class="chip" title="Your bot: coins per hour">🤖 ' + fmt(G.botStats().coinsPerHr) + '/h</span>' +
     '</div>';
   if (lastLevel && L.level > lastLevel) { SFX.level(); confetti(80); toast('⭐ Level up! You are now <b>level ' + L.level + '</b>', 'gold'); }
   lastLevel = L.level;
@@ -80,19 +81,19 @@ function header() {
 
 // ---------------- tabs & pages ----------------
 var TABS = [
-  { id: 'build', ic: '🔨', name: 'Build' }, { id: 'learn', ic: '📚', name: 'Review' }, { id: 'shop', ic: '🏗️', name: 'Workshop' }, { id: 'work', ic: '💼', name: 'Work' }, { id: 'upg', ic: '⬆️', name: 'Upgrades' }, { id: 'codex', ic: '📖', name: 'Codex' }];
+  { id: 'build', ic: '🔨', name: 'Build' }, { id: 'learn', ic: '🎯', name: 'Mastery' }, { id: 'shop', ic: '🏗️', name: 'Workshop' }, { id: 'work', ic: '🤖', name: 'Your Bot' }, { id: 'upg', ic: '⬆️', name: 'Upgrades' }, { id: 'codex', ic: '📖', name: 'Codex' }];
 var tab = 'build', subIdx = { build: 0, learn: 0, shop: 0, work: 0, upg: 0, codex: 0 }, scrollMem = {};
 function subpages() {
   if (tab === 'build') return [{ id: 'today', name: '🏠 Today' }].concat(G.CHD.tracks.map(function (t) { return { id: 'c-' + t.id, name: t.icon + ' ' + t.name, lock: !G.chTrackUnlocked(t.id) }; }));
   if (tab === 'shop') return [{ id: 'proj', name: '🏗️ Projects & builds' }];
-  if (tab === 'learn') return [{ id: 'rtoday', name: '🔁 Review' }].concat(DD.tracks.map(function (t) { return { id: 't-' + t.id, name: t.icon + ' ' + t.short, lock: !G.trackUnlocked(t.id), dot: G.trackUnlocked(t.id) ? dueInTrack(t.id) : 0 }; }));
-  if (tab === 'work') return [{ id: 'desk', name: '💻 Desk' }, { id: 'tickets', name: '🎫 How work pays' }];
-  if (tab === 'upg') return [{ id: 'insight', name: '💠 Mastery' }, { id: 'office', name: '🪙 Office' }];
+  if (tab === 'learn') return [{ id: 'mastery', name: '🎯 Drills', dot: G.conceptsDue().length }, { id: 'rtoday', name: '📚 Theory (optional)' }].concat(DD.tracks.map(function (t) { return { id: 't-' + t.id, name: '📚 ' + t.icon + ' ' + t.short, lock: !G.trackUnlocked(t.id), dot: G.trackUnlocked(t.id) ? dueInTrack(t.id) : 0 }; }));
+  if (tab === 'work') return [{ id: 'bot', name: '🤖 Bot' }, { id: 'botmods', name: '🔧 Modules' }, { id: 'botlog', name: '🧯 Errors & logs' }];
+  if (tab === 'upg') return [{ id: 'insight', name: '💠 Insight boosts' }, { id: 'office', name: '🪙 Bot hardware' }];
   return [{ id: 'profile', name: '🧙 Profile' }, { id: 'relics', name: '🏺 Relics' }, { id: 'gloss', name: '📖 Glossary' }, { id: 'ach', name: '🏆 Achievements' }, { id: 'settings', name: '⚙️ Settings' }];
 }
 function dueInTrack(t) { var n = 0; (G.TRACK_UNITS[t] || []).forEach(function (u) { if (G.unitOpen(u)) n += G.unitDue(u); }); return n; }
 function renderTabs() {
-  var due = G.allDue().length;
+  var due = G.conceptsDue().length;
   $('#tabs').innerHTML = '<div class="in">' + TABS.map(function (t) { return '<button class="tab ' + (t.id === tab ? 'on' : '') + '" data-act="tab" data-v="' + t.id + '"><span class="ic">' + t.ic + '</span>' + t.name + (t.id === 'learn' && due ? '<span class="badge">' + due + '</span>' : '') + '</button>'; }).join('') + '</div>';
 }
 function rememberScroll() { document.querySelectorAll('#pages .page').forEach(function (p) { scrollMem[p.dataset.id] = p.scrollTop; }); }
@@ -119,10 +120,12 @@ function pageHTML(id) {
   if (id === 'today') return window.PLAY.todayHTML();
   if (id.indexOf('c-') === 0) return window.PLAY.trackHTML(id.slice(2));
   if (id === 'proj') return window.PLAY.workshopHTML();
+  if (id === 'mastery') return window.MASTERY.pageHTML();
+  if (id === 'bot') return window.BOTUI.homeHTML();
+  if (id === 'botmods') return window.BOTUI.modsHTML();
+  if (id === 'botlog') return window.BOTUI.logHTML();
   if (id === 'rtoday') return todayHTML();
   if (id.indexOf('t-') === 0) return trackHTML(id.slice(2));
-  if (id === 'desk') return deskHTML();
-  if (id === 'tickets') return workInfoHTML();
   if (id === 'insight') return upgHTML(G.INSIGHT_UPG, 'insight', '💠');
   if (id === 'office') return upgHTML(G.OFFICE_UPG, 'coins', '🪙');
   if (id === 'relics') return relicsHTML();
@@ -142,7 +145,7 @@ function nextUnit() { // first open, not learned unit in track order (think, cod
 function todayHTML() {
   var S = G.S, due = G.allDue().length, nu = nextUnit(), h = '';
   var T = Math.min(S.tier + 1, 5), ts = G.tierStatus(T), tier = DD.tiers[T - 1];
-  h += '<div class="card trackHero" style="--tc:#7c5cff"><div class="row"><div class="bigIcon">🐉</div><div class="grow"><h2>Review &amp; quiz lessons</h2><div class="muted">Short quiz lessons and spaced review lock in what you discovered while building. Tier bosses need ' + Math.round(G.BOSS_MASTERY * 100) + '% quiz mastery.</div></div></div>' +
+  h += '<div class="card trackHero" style="--tc:#7c5cff"><div class="row"><div class="bigIcon">🐉</div><div class="grow"><h2>Theory (optional)</h2><div class="muted">The original quiz lessons: vocabulary and the why behind each idea. Mastery comes from 🎯 Drills; these are for reading up and they still pay XP and Insight.</div></div></div>' +
     '<div class="bar" style="margin-top:10px"><i style="width:' + Math.min(100, S.daily.xp / G.DAILY_GOAL_XP * 100) + '%"></i><span>' + Math.min(S.daily.xp, G.DAILY_GOAL_XP) + ' / ' + G.DAILY_GOAL_XP + ' XP' + (S.daily.goal ? ' ✓' : '') + '</span></div>' +
     (nu ? '<button class="btn big" style="margin-top:12px" data-act="lesson" data-v="' + nu.id + '">▶ Continue: ' + nu.icon + ' ' + esc(nu.name) + '</button><div class="tiny" style="margin-top:6px;text-align:center">' + TR[nu.track].icon + ' ' + TR[nu.track].name + ' · ' + DD.tiers[nu.tier - 1].name + '</div>' : '<div class="muted" style="margin-top:10px">Every open unit is learned. Review to raise mastery and open the boss.</div>') + '</div>';
   h += '<div class="card reviewCard"><div class="row"><div style="font-size:38px">🔁</div><div class="grow"><h3>Spaced review</h3><div class="muted">' + (due ? '<b style="color:var(--gold)">' + due + ' due</b>. Missed questions come back sooner; known ones wait longer.' : 'Nothing due right now. Practice your weakest questions for half XP.') + '</div></div></div><button class="btn ' + (due ? 'gold' : 'ghost') + ' big" style="margin-top:10px" data-act="review">' + (due ? 'Review ' + Math.min(due, 12) + ' due' : 'Practice weakest') + '</button></div>';
@@ -370,48 +373,10 @@ function finish() {
 }
 function closeLesson() { sess = null; cur = null; $('#overlay').classList.add('hidden'); $('#overlay').innerHTML = ''; render(); }
 
-// ---------------- work ----------------
-var codeLines = ['function ship(feature) {', '  if (!feature.tested) {', '    return runTests(feature)', '  }', '  deploy(feature)', '}', 'const bugs = issues.filter(i => i.open)', 'git commit -m "fix: empty cart"', 'SELECT * FROM orders WHERE id = 7;', '// TODO: ask the AI for a plan', 'await fetch("/api/tickets")', 'expect(total([5,5])).toBe(10)', 'for (const t of tickets) work(t)', 'git push origin main', 'if (user?.isAdmin) showPanel()'];
-function deskHTML() {
-  var S = G.S; G.ensureTickets();
-  var hr = new Date().getHours(), night = hr < 7 || hr >= 19;
-  var scroll = codeLines.concat(codeLines).join('\n');
-  var h = '<div class="desk" id="desk" style="--sky1:' + (night ? '#0b1030' : '#38bdf8') + ';--sky2:' + (night ? '#1e1b4b' : '#bae6fd') + '"><div class="win">' + (night ? '<span style="position:absolute;left:10px;top:8px">🌙</span>' : '<span style="position:absolute;left:10px;top:6px">☀️</span>') + '</div><div class="mon"><div class="scroll">' + esc(scroll) + '</div></div><div class="table"></div><div class="dev">' + G.rank().ic + '</div><div class="cup">' + (G.lv('coffee') ? '☕' : '🥤') + '</div>' + (G.lv('cat') ? '<div class="pet">🐈</div>' : G.lv('plant') ? '<div class="pet">🪴</div>' : '') + '</div>';
-  h += '<div class="card"><div class="row"><div class="grow"><h3>Your developer is working</h3><div class="muted">Speed <b>' + G.workSpeed().toFixed(2) + '×</b> from 🧠 ' + G.knowledgePower() + ' knowledge power. Every question you master makes the work faster.</div></div></div>' +
-    '<div class="row" style="margin-top:8px;gap:6px;flex-wrap:wrap"><span class="chip">⭐ Rep ' + fmt(S.rep) + '</span><span class="chip">🎫 Ticket Lv ' + G.repLevel() + '/' + G.ticketLevelCap() + '</span><span class="chip">🖥️ ' + G.slots() + ' slot' + (G.slots() > 1 ? 's' : '') + '</span><span class="chip">🌙 Offline ' + pct(G.offRate()) + ' · ' + dur(G.offCap()) + '</span></div></div>';
-  h += '<div class="sectionTitle">Active tickets</div><div id="tickets">' + S.work.tickets.map(ticketHTML).join('') + '</div>';
-  if (!G.lv('queue')) h += '<div class="tiny" style="text-align:center">Tip: the 📥 Ticket Queue office upgrade claims finished tickets for you, even while you are away.</div>';
-  return h;
-}
-function ticketHTML(tk, i) {
-  var t = TR[tk.track], p = tk.done / tk.work, sp = G.ticketSpeed(tk), left = (tk.work - tk.done) / sp * 1000;
-  return '<div class="ticket ' + (tk.finished ? 'done' : '') + '" id="tk' + i + '"><div class="row"><span style="font-size:22px">' + t.icon + '</span><div class="grow"><div class="tid">' + tk.id + ' · Lv ' + tk.L + '</div><b>' + esc(tk.name) + '</b></div>' +
-    (tk.finished ? '<button class="btn sm gold" data-act="claim" data-v="' + i + '">Claim 🪙' + fmt(tk.coins * G.coinMult()) + '</button>' : '<span class="tiny" id="tkl' + i + '">' + leftTxt(left) + '</span>') + '</div>' +
-    '<div class="bar small" style="margin-top:8px"><i id="tkb' + i + '" style="width:' + p * 100 + '%;background:' + t.color + '"></i></div></div>';
-}
-function leftTxt(ms) { return ms < 6e4 ? Math.max(1, Math.ceil(ms / 1000)) + 's' : dur(ms); }
-function workInfoHTML() {
-  return '<div class="card"><h3>💼 How the idle desk works</h3><div class="muted" style="line-height:1.6">' +
-    '• Your developer works tickets on their own, online or offline.<br>• <b>Work speed</b> grows with 🧠 knowledge power, which comes only from questions you have answered right and kept in review. Each mastered question adds a lot.<br>• Tickets in a track you have leveled go faster, at +5% per track level.<br>' +
-    '• Finished tickets pay 🪙 coins and ⭐ reputation. Reputation raises ticket level, which means more coins, but the level is capped by your career tier. <b>Beat bosses to earn bigger tickets.</b><br>' +
-    '• Offline work runs at ' + pct(G.offRate()) + ' of normal speed for up to ' + dur(G.offCap()) + '. Upgrades raise both.<br>• Coins buy Office gear. 💠 Insight, from answering questions, buys permanent Mastery boosts.<br>• Nothing here can level up your knowledge. Only lessons and reviews do that.</div></div>';
-}
-function liveWork() {
-  if (tab !== 'work') return;
-  var S = G.S, rerender = false;
-  S.work.tickets.forEach(function (tk, i) {
-    var el = $('#tk' + i); if (!el) { rerender = true; return; }
-    if (tk.finished !== el.classList.contains('done')) { rerender = true; return; }
-    var b = $('#tkb' + i); if (b) b.style.width = (tk.done / tk.work * 100) + '%';
-    var l = $('#tkl' + i); if (l) { var left = (tk.work - tk.done) / G.ticketSpeed(tk) * 1000; l.textContent = leftTxt(left); }
-  });
-  if (rerender) { var tks = $('#tickets'); if (tks) tks.innerHTML = S.work.tickets.map(ticketHTML).join(''); }
-}
-
 // ---------------- upgrades ----------------
 function upgHTML(list, cur_, ic) {
   var S = G.S;
-  var h = '<div class="card"><h3>' + (cur_ === 'insight' ? '💠 Mastery: permanent boosts' : '🪙 Office: idle gear') + '</h3><div class="muted">' + (cur_ === 'insight' ? 'Every correct answer gives 💠 Insight. Spend it on slow, permanent boosts. None of them skip learning.' : 'Coins come from tickets your developer finishes. Gear speeds up the desk and adds comforts.') + '</div><div style="margin-top:8px;font-weight:800;font-size:18px">' + ic + ' ' + fmt(S[cur_]) + '</div></div>';
+  var h = '<div class="card"><h3>' + (cur_ === 'insight' ? '💠 Insight: permanent boosts' : '🪙 Bot hardware') + '</h3><div class="muted">' + (cur_ === 'insight' ? 'Drills, slams and level-ups give 💠 Insight. Spend it on slow, permanent boosts. None of them skip learning.' : 'Coins come from tasks your bot finishes. Hardware runs it faster; it does not make it smarter. Only modules you build do that.') + '</div><div style="margin-top:8px;font-weight:800;font-size:18px">' + ic + ' ' + fmt(S[cur_]) + '</div></div>';
   list.forEach(function (d) {
     var L = G.lv(d.id), max = d.id === 'freeze' ? false : L >= d.max, c = G.cost(d), can = G.canBuy(d, cur_);
     var lvTxt = d.id === 'freeze' ? 'Held: ' + S.streak.freezes + '/3' : 'Lv ' + L + '/' + d.max;
@@ -456,7 +421,7 @@ function profileHTML() {
   h += '<div class="sectionTitle">Builder skills</div>' + G.CHD.tracks.map(function (t) { var cs = G.chTrackStats(t.id); return '<div class="upg"><div class="uic">' + t.icon + '</div><div class="grow"><b>' + esc(t.name) + '</b><div class="bar small"><i style="width:' + (cs.n ? cs.solved / cs.n * 100 : 0) + '%;background:' + t.color + '"></i></div><div class="tiny">' + cs.solved + '/' + cs.n + ' challenges</div></div></div>'; }).join('');
   h += '<div class="sectionTitle">Quiz classes</div>' + DD.tracks.map(function (t) { var tl = G.trackLevel(t.id), ts = G.trackStats(t.id); return '<div class="upg"><div class="uic">' + t.icon + '</div><div class="grow"><b>' + t.cls + '</b> <span class="tiny">' + t.name + '</span><div class="bar small"><i style="width:' + tl.into / tl.need * 100 + '%;background:' + t.color + '"></i></div><div class="tiny">Lv ' + tl.level + ' · mastery ' + pct(ts.mastery) + ' · ' + ts.mastered + '/' + ts.n + ' 👑</div></div></div>'; }).join('');
   var acc = st.answered ? st.correct / st.answered : 0;
-  h += '<div class="sectionTitle">Stats</div><div class="card"><div class="muted" style="line-height:1.8">Challenges built: <b>' + G.chSolvedCount() + '</b> · first-run solves <b>' + (st.firstRun || 0) + '</b> · experiments <b>' + (st.experiments || 0) + '</b><br>Answers: <b>' + fmt(st.answered) + '</b> (' + pct(acc) + ' correct)<br>Lessons: <b>' + st.lessons + '</b> · perfect <b>' + st.perfect + '</b><br>Best combo: <b>' + st.bestCombo + '</b> · reviews <b>' + st.reviews + '</b><br>Bosses beaten: <b>' + S.tier + '</b>/5<br>Tickets finished: <b>' + fmt(st.tickets) + '</b> · coins earned <b>' + fmt(st.coinsEarned) + '</b><br>Time in lessons: <b>' + dur(st.playMs) + '</b><br>Started: ' + new Date(S.created).toLocaleDateString() + '</div></div>';
+  h += '<div class="sectionTitle">Stats</div><div class="card"><div class="muted" style="line-height:1.8">Challenges built: <b>' + G.chSolvedCount() + '</b> · first-run solves <b>' + (st.firstRun || 0) + '</b> · experiments <b>' + (st.experiments || 0) + '</b><br>Drills: <b>' + fmt(st.drills || 0) + '</b> · unaided <b>' + fmt(st.drillOk || 0) + '</b> · slams <b>' + (st.slams || 0) + '</b> · best slam combo <b>' + (st.bestSlamCombo || 0) + '</b><br>Theory answers: <b>' + fmt(st.answered) + '</b> (' + pct(acc) + ' correct)<br>Lessons: <b>' + st.lessons + '</b> · perfect <b>' + st.perfect + '</b><br>Best combo: <b>' + st.bestCombo + '</b> · reviews <b>' + st.reviews + '</b><br>Bosses beaten: <b>' + S.tier + '</b>/5<br>Bot tasks done: <b>' + fmt(st.tickets) + '</b> · coins earned <b>' + fmt(st.coinsEarned) + '</b><br>Time in lessons: <b>' + dur(st.playMs) + '</b><br>Started: ' + new Date(S.created).toLocaleDateString() + '</div></div>';
   return h;
 }
 function settingsHTML() {
@@ -471,15 +436,15 @@ document.addEventListener('click', function (e) {
   var el = e.target.closest('[data-act]'); if (!el || el.disabled) return;
   var a = el.dataset.act, v = el.dataset.v;
   if (a.indexOf('ch') === 0 && a !== 'chain') { if ((a === 'chopen') && !$('#modal').classList.contains('hidden')) closeModal(); window.PLAY.act(a, v, el); return; }
+  if (a.indexOf('ms') === 0) { SFX.tap(); window.MASTERY.act(a, v); return; }
   if ($('#overlay').contains(el)) { act(a, v, el, e); return; }
   SFX.tap();
   if (a === 'tab') { if (tab === v) { subIdx[tab] = 0; } tab = v; render(); }
   else if (a === 'sub') { var i = +v; if (tab !== 'learn' || true) { subIdx[tab] = i; var p = $('#pages'); p.scrollTo({ left: i * p.clientWidth, behavior: 'smooth' }); document.querySelectorAll('#subnav .pill').forEach(function (b, k) { b.classList.toggle('on', k === i); }); } }
   else if (a === 'lesson') begin(G.pickLesson(v));
   else if (a === 'review') { var s = G.pickReview(v); if (!s.queue.length) { toast('Answer a few lessons first. Nothing to review yet.'); return; } begin(s); }
-  else if (a === 'boss') begin(G.pickBoss(+v));
+  else if (a === 'boss') window.MASTERY.bossStart(+v);
   else if (a === 'deed') { var r = G.claimDeed(v); if (r) { SFX.coin(); toast('+' + r + ' 💠 Insight'); render(); } }
-  else if (a === 'claim') { var tk = G.S.work.tickets[+v], res = G.claimTicket(tk); if (res) { SFX.coin(); flyCoins(); toast('🎫 ' + esc(tk.name) + ' shipped! +' + fmt(res.coins) + ' 🪙 +' + res.rep + ' ⭐'); G.checkAch(); G.save(); render(); } }
   else if (a === 'buy') { var pr = v.split(':'), list = pr[0] === 'insight' ? G.INSIGHT_UPG : G.OFFICE_UPG, d = list.filter(function (x) { return x.id === pr[1]; })[0]; if (G.buy(d, pr[0])) { SFX.level(); toast(d.ic + ' ' + d.name + ' upgraded!'); render(); } }
   else if (a === 'sound') { G.S.settings.sound = !G.S.settings.sound; G.save(); render(); }
   else if (a === 'export') { var code = G.exportSave(); modal('<div class="bigic">💾</div><h2>Your save</h2><p class="muted">Copy this text and keep it somewhere safe.</p><textarea readonly id="expTa">' + code + '</textarea><div class="row" style="margin-top:10px;gap:8px"><button class="btn grow" data-act="copyexp">Copy</button><button class="btn ghost grow" data-act="close">Close</button></div>'); }
@@ -490,7 +455,7 @@ document.addEventListener('click', function (e) {
   else if (a === 'close') closeModal();
 });
 document.addEventListener('input', function (e) { if (e.target.id === 'glossQ') { glossFilter = e.target.value; $('#glossList').innerHTML = glossList(); } });
-function flyCoins() { var d = $('#desk'); if (!d) return; for (var i = 0; i < 5; i++) { var s = document.createElement('span'); s.className = 'fly'; s.textContent = '🪙'; s.style.left = (40 + Math.random() * 20) + '%'; s.style.top = '50%'; s.style.animationDelay = (i * 0.08) + 's'; d.appendChild(s); setTimeout(function (x) { x.remove(); }.bind(null, s), 1500); } }
+function flyCoins() { var d = $('.botAv'); if (!d) return; for (var i = 0; i < 5; i++) { var s = document.createElement('span'); s.className = 'fly'; s.textContent = '🪙'; s.style.left = (40 + Math.random() * 20) + '%'; s.style.top = '50%'; s.style.animationDelay = (i * 0.08) + 's'; d.appendChild(s); setTimeout(function (x) { x.remove(); }.bind(null, s), 1500); } }
 
 window.UIX = { esc: esc, toast: toast, SFX: SFX, confetti: confetti, header: header, render: render, hl: hl, modal: modal, closeModal: closeModal, fmt: fmt, dur: dur, audioInit: audioInit };
 // ---------------- hooks from engine ----------------
@@ -504,7 +469,7 @@ window.UI = {
 var had = G.load();
 G.rollDay();
 var off = had ? G.offlineCatchup() : null;
-G.ensureTickets(); G.save();
+G.save();
 lastLevel = G.levelInfo().level;
 render();
 $('#pages').addEventListener('scroll', onPagesScroll, { passive: true });
@@ -512,13 +477,16 @@ window.addEventListener('resize', function () { var p = $('#pages'); p.scrollLef
 $('#gateBtn').addEventListener('click', function () {
   audioInit(); SFX.done(); $('#audioGate').classList.add('hidden');
   if (!G.S.seenIntro) {
-    G.S.seenIntro = true; G.S.seenV2 = true; G.save();
-    modal('<div class="bigic">🐉</div><h2>Welcome, Intern</h2><p class="muted" style="text-align:left;line-height:1.55">You are starting a long career: <b>Intern → Junior → Developer → Senior → Staff Architect → AI-Native Lead</b>.<br><br>🔨 <b>Build</b>: hands-on challenges. You change real code, run it, see the result, and discover how it works. HTML, CSS, JavaScript, Python, SQL, Git, C++ and more, all in your browser.<br>🏗️ <b>Workshop</b>: projects you build step by step, kept so you can run them any time.<br>📚 <b>Review</b>: quick quiz lessons and spaced review so it sticks.<br>⚔️ <b>Bosses</b> end each tier: a build under pressure, then an exam.<br>💼 <b>Work</b>: your developer earns coins on their own, faster the more you know.<br><br>Start with <b>🧱 HTML → your first page</b>.</p><button class="btn big" data-act="close">Let’s build</button>');
+    G.S.seenIntro = true; G.S.seenV2 = true; G.S.seenV3 = true; G.save();
+    modal('<div class="bigic">🐉</div><h2>Welcome, Intern</h2><p class="muted" style="text-align:left;line-height:1.55">You are starting a long career: <b>Intern → Junior → Developer → Senior → Staff Architect → AI-Native Lead</b>.<br><br>🔨 <b>Build</b>: hands-on challenges. You change real code, run it, see the result, and discover how it works. HTML, CSS, JavaScript, Python, SQL, Git, C++ and more, all in your browser.<br>🏗️ <b>Workshop</b>: projects you build step by step, kept so you can run them any time.<br>🎯 <b>Mastery</b>: rapid drills with only a tag and real tests, spaced over days until you can do it cold.<br>⚔️ <b>Bosses</b> end each tier: a build under pressure, then a drill exam.<br>🤖 <b>Your Bot</b>: an automation bot that earns coins. You code, wire up and train its modules.<br><br>Start with <b>🧱 HTML → your first page</b>.</p><button class="btn big" data-act="close">Let’s build</button>');
   } else if (!G.S.seenV2) {
     G.S.seenV2 = true; G.save();
     modal('<div class="bigic">🔨</div><h2>New: learn by building</h2><p class="muted" style="text-align:left;line-height:1.55">Your progress, relics, desk and reviews are all kept.<br><br><b>🔨 Build</b> is the new home: ' + G.CHD.list.length + ' hands-on challenges in live sandboxes. Edit a web page and watch it change, run real Python and SQLite, use a Git terminal with a commit graph, compile C++ and read real compiler errors, and direct an AI coding assistant. You find out <i>why</i> after you get it working.<br><br><b>🏗️ Workshop</b> keeps your projects: a personal website, a to-do app, a weather app, a text adventure, a bookstore database, a mini-game, and a deploy pipeline.<br><br>Your quiz lessons now live in <b>📚 Review</b>. Bosses now start with a build challenge.</p><button class="btn big" data-act="close">Start building</button>');
+  } else if (!G.S.seenV3) {
+    G.S.seenV3 = true; G.save();
+    modal('<div class="bigic">🎯</div><h2>New: Mastery drills and Your Bot</h2><p class="muted" style="text-align:left;line-height:1.55">All your progress is kept.<br><br><b>🎯 Mastery</b> replaces Review. Every concept you discovered in Build now has drills: just a tag like <i>“Fix the off-by-one”</i>, a small broken program, and real tests. No hints. Explanations only after a miss. Slam 6–10 in a row for combos and speed bonuses. Concepts climb 🌱 Learned → 🛠️ Practiced → ⚡ Fluent → 👑 Mastered over several days. Bosses now need Practiced concepts, and their exam is a drill slam. The old quizzes live on as optional 📚 Theory.<br><br><b>🤖 Your Bot</b> replaces the work desk. It works real kinds of tasks (sort the inbox, write reports, triage bugs…). Improve it by building ' + G.botMods().length + ' hands-on modules: parsing, retries with backoff, cron and webhooks, tool schemas, secrets, eval sets, few-shot examples, RAG, guardrails against prompt injection, and more. Watch its pipeline and error log change.</p><button class="btn big" data-act="close">Show me</button>');
   } else if (off && (off.coins || off.n || off.away > 3e5)) {
-    modal('<div class="bigic">🌅</div><h2>Welcome back!</h2><p class="muted">You were away <b>' + dur(off.away) + '</b>. Your developer worked at ' + pct(off.rate) + ' speed for ' + dur(off.capped) + '.</p><div class="stats3"><div class="stat"><small>Coins</small><b>🪙' + fmt(off.coins) + '</b></div><div class="stat"><small>Tickets</small><b>' + off.n + '</b></div><div class="stat"><small>Rep</small><b>⭐' + off.rep + '</b></div></div>' + (G.lv('queue') ? '' : '<p class="tiny">Without the 📥 Ticket Queue, finished tickets wait for you to claim them.</p>') + '<p class="muted">' + (G.allDue().length ? '🔁 <b>' + G.allDue().length + '</b> question' + (G.allDue().length === 1 ? ' is' : 's are') + ' due for review.' : '') + '</p><button class="btn big" data-act="close">Back to work</button>');
+    modal('<div class="bigic">🌅</div><h2>Welcome back!</h2><p class="muted">You were away <b>' + dur(off.away) + '</b>. Your bot kept working at ' + pct(off.rate) + ' speed for ' + dur(off.capped) + '.</p><div class="stats3"><div class="stat"><small>Coins</small><b>🪙' + fmt(off.coins) + '</b></div><div class="stat"><small>Tasks</small><b>' + fmt(off.n) + '</b></div><div class="stat"><small>Succeeded</small><b>' + (off.n ? pct(off.ok / off.n) : '—') + '</b></div></div><p class="muted">' + (G.conceptsDue().length ? '🎯 <b>' + G.conceptsDue().length + '</b> concept' + (G.conceptsDue().length === 1 ? ' is' : 's are') + ' due for drills.' : '') + '</p><button class="btn big" data-act="close">Back to work</button>');
   }
 });
 var lastT = Date.now(), n = 0;
@@ -526,10 +494,11 @@ setInterval(function () {
   var t = Date.now(), dt = Math.min(t - lastT, 5000); lastT = t;
   var c = G.tick(dt, false); if (c.n) { G.checkAch(); if (tab === 'work') { SFX.coin(); flyCoins(); } }
   n++;
-  if (n % 4 === 0) { liveWork(); if (!sess) header(); }
+  if (tab === 'work' && $('#overlay').classList.contains('hidden')) window.BOTUI.live();
+  if (n % 4 === 0) { if (!sess && !(window.PLAY && window.PLAY.P)) header(); }
   if (n % 40 === 0) G.save();
 }, 250);
-document.addEventListener('visibilitychange', function () { if (document.hidden) G.save(); else { var o = G.offlineCatchup(); lastT = Date.now(); if (o && o.n) toast('🌅 While away: +' + fmt(o.coins) + ' 🪙 from ' + o.n + ' tickets'); if (!sess) render(); } });
+document.addEventListener('visibilitychange', function () { if (document.hidden) G.save(); else { var o = G.offlineCatchup(); lastT = Date.now(); if (o && o.n) toast('🌅 While away your bot ran ' + fmt(o.n) + ' tasks: +' + fmt(o.coins) + ' 🪙'); if (!sess) render(); } });
 window.addEventListener('pagehide', function () { G.save(); });
 window.__DD = { G: G, PLAY: window.PLAY, begin: begin, act: act, get sess() { return sess; }, get cur() { return cur; }, render: render };
 })();

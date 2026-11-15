@@ -15,15 +15,16 @@ var LANG = { cpp: { file: 'main.cpp', tool: 'clang++ (C++17)', run: './main' }, 
 
 // ---------------- state of the open challenge ----------------
 var P = null;
-function open(id) {
-  var ch = CHD.byId[id]; if (!ch) return;
-  var st = G.chState(id) || {};
+function open(id, dopt) {
+  var ch = typeof id === 'object' ? id : CHD.byId[id]; if (!ch) return;
+  var st = ch.drill ? {} : (G.chState(ch.id) || {});
   P = { ch: ch, vals: Object.assign({}, st.draft || (st.solved && st.vals) || CHD.startVals(ch)), typed: false, text: '', runs: 0, hintLv: st.hintLv || 0, res: null, steps: null, step: 0, bp: {}, errLine: 0, won: !!st.solved, rewarded: false, chat: [], sel: {}, busy: false };
+  if (ch.drill) P.drill = { o: dopt || {}, t0: Date.now(), missed: false, done: false, errs: 0 };
   if (ch.sb === 'git') { P.git = SB.newGit(ch); P.term = []; P.cmd = ''; P.tab = 'graph'; if (ch.git.intro) P.term.push({ o: ch.git.intro }); }
   if (ch.sb === 'ai') { (st.solved && st.sel || []).forEach(function (k) { P.sel[k] = 1; }); }
   var ov = $('#overlay'); ov.classList.remove('hidden');
   ov.innerHTML = '<div class="cp">' +
-    '<div class="lhead"><button class="x" data-act="chquit">✕</button><div class="grow cpTitle" id="cpTitle"></div><button class="btn sm ghost" data-act="chhint">💡</button></div>' +
+    '<div class="lhead"><button class="x" data-act="chquit">✕</button><div class="grow cpTitle" id="cpTitle"></div>' + (ch.drill ? '<button class="btn sm ghost" data-act="chdgive">🏳️ Show me</button>' : '<button class="btn sm ghost" data-act="chhint">💡</button>') + '</div>' +
     '<div class="cpBody" id="cpBody"><div id="cpStory"></div><div id="cpGoals"></div><div id="cpHint"></div>' +
     '<div class="cpPanel" id="cpPanel"><div class="cpOutHead" id="cpOutHead"></div><div id="cpOut" class="cpOut"></div><div id="cpCon" class="cpCon hidden"></div><canvas id="cpTurtle" class="cpTurtle hidden" width="320" height="240"></canvas><div id="cpStep"></div><div id="cpExtra"></div></div>' +
     '<div id="cpCode"></div><div id="cpLearn"></div></div>' +
@@ -31,20 +32,23 @@ function open(id) {
   X().audioInit(); X().SFX.select();
   drawAll();
   if (ch.sb === 'html') livePreview(); var me0 = P;
-  if (ch.sb === 'py') SB.pyLoad(function (s) { if (P === me0) con('⏳ ' + s, 'sys'); }).then(function () { if (P !== me0) return; con('🐍 Python ' + 'is ready.', 'sys'); }, function (e) { if (P !== me0) return; con('⚠️ ' + e.message, 'err'); });
+  if (ch.sb === 'py') SB.pyLoad(function (s) { if (P === me0) con('⏳ ' + s, 'sys'); }).then(function () { if (P !== me0) return; if (P.drill && Date.now() - P.drill.t0 > 1500) P.drill.t0 = Date.now(); con('🐍 Python ' + 'is ready.', 'sys'); }, function (e) { if (P !== me0) return; con('⚠️ ' + e.message, 'err'); });
   if (ch.sb === 'sql') SB.sqlLoad(function (s) { if (P === me0) setOut('<div class="muted">⏳ ' + esc(s) + '</div>'); }).then(function () { if (P !== me0) return; if (!P.res) setOut('<div class="muted">🗄️ SQLite is ready. Press ▶ Run to query the database.</div>'); }, function (e) { if (P !== me0) return; setOut('<div class="cpErr">⚠️ ' + esc(e.message) + '</div>'); });
 }
 function close() {
+  if (P && P.drill) { var dq = P.drill; P = null; var ov0 = $('#overlay'); ov0.classList.add('hidden'); ov0.innerHTML = ''; if (dq.o.onQuit) dq.o.onQuit(dq.done); X().render(); return; }
   if (P && !P.won) { var st = G.chState(P.ch.id); if (st || P.runs) { G.S.ch[P.ch.id] = G.S.ch[P.ch.id] || { runs: 0, hintLv: 0 }; G.S.ch[P.ch.id].draft = P.vals; G.save(); } }
   P = null; var ov = $('#overlay'); ov.classList.add('hidden'); ov.innerHTML = ''; X().render();
 }
 function code() { return P.typed ? P.text : SB.fill(P.ch, P.vals); }
 function drawAll() { drawTitle(); drawStory(); drawGoals(); drawHint(); drawCode(); drawFoot(); drawOutHead(); if (P.ch.sb === 'git') drawGit(); if (P.ch.sb === 'ai') drawAI(); if (P.ch.sb === 'cmp') drawCmpIdle(); }
 function drawTitle() {
+  if (P.drill) { var o = P.drill.o, tr = TRK[P.ch.t] || { icon: '🎯', name: '' }; $('#cpTitle').innerHTML = '<div class="tiny">' + (o.label || '🎯 Drill') + ' · ' + tr.icon + ' ' + esc(tr.name) + ' · ' + SBNAME[P.ch.sb] + (o.combo ? ' · 🔥' + o.combo : '') + ' · ⏱ <span id="drTimer">0s</span></div><b class="drTag">' + esc(P.ch.title) + '</b>'; return; }
   var ch = P.ch, t = ch.boss ? { icon: '⚔️', name: 'Boss' } : TRK[ch.t];
   $('#cpTitle').innerHTML = '<div class="tiny">' + t.icon + ' ' + esc(t.name) + ' · ' + SBNAME[ch.sb] + (ch.proj ? ' · ' + PRJ[ch.proj[0]].icon + ' ' + esc(PRJ[ch.proj[0]].name) + ' ' + ch.proj[1] + '/' + G.projSteps(ch.proj[0]).length : '') + '</div><b>' + (ch.icon || '') + ' ' + esc(ch.title) + '</b>';
 }
 function drawStory() {
+  if (P.drill) { $('#cpStory').innerHTML = ''; return; }
   var ch = P.ch, h = '<div class="cpStory">' + md(ch.story) + '</div>';
   if (ch.explore) h += '<div class="cpExplore">🧪 <b>Experiment zone</b>: every different version you run earns XP. Try at least ' + ch.explore + '.</div>';
   if (ch.boss) h += '<div class="cpBossNote">⚔️ Boss rules: ' + (ch.sb === 'git' ? 'at most <b>' + ch.runs + '</b> commands.' : '<b>' + ch.runs + '</b> runs to get every goal green.') + ' Runs used: <b id="cpRunsUsed">' + P.runs + '</b></div>';
@@ -53,6 +57,7 @@ function drawStory() {
 function goalsDone() { return P.res && P.res.length && P.res.every(Boolean) && exploreOk(); }
 function exploreOk() { if (!P.ch.explore) return true; var st = G.chState(P.ch.id); return P.won || (st && st.ex && st.ex.length >= P.ch.explore); }
 function drawGoals() {
+  if (P.drill && !P.res) { $('#cpGoals').innerHTML = '<div class="tiny drNote">No hints. Tests check the result when you ' + (P.ch.sb === 'git' ? 'run commands' : P.ch.sb === 'ai' ? 'send' : 'run') + '.</div>'; return; }
   var ch = P.ch, h = '<div class="cpGoals"><div class="tiny">GOALS</div>';
   ch.goals.forEach(function (g, i) { var r = P.res ? P.res[i] : null; h += '<div class="goal ' + (r === true ? 'ok' : r === false ? 'no' : '') + '"><span>' + (r === true ? '✅' : r === false ? '❌' : '⬜') + '</span> ' + md(g[0]).replace(/^<p>|<\/p>$/g, '') + '</div>'; });
   if (ch.explore) { var st = G.chState(ch.id), n = st && st.ex ? st.ex.length : 0; h += '<div class="goal ' + (n >= ch.explore ? 'ok' : '') + '"><span>' + (n >= ch.explore ? '✅' : '🧪') + '</span> Run ' + ch.explore + ' different experiments (' + Math.min(n, ch.explore) + '/' + ch.explore + ')</div>'; }
@@ -127,6 +132,7 @@ function drawFoot() {
   else if (ch.sb === 'ai') h = '<button class="btn big" data-act="chrun" ' + (P.busy ? 'disabled' : '') + '>📨 Send to the AI</button>';
   else h = '<button class="btn big" data-act="chrun" ' + (P.busy ? 'disabled' : '') + '>' + (P.busy ? '⏳ Running…' : ch.sb === 'cmp' ? '🛠️ Compile & run' : '▶ Run') + '</button>';
   if (P.won && !h) h = '<button class="btn big green" data-act="chdone">🏁 Finish</button>';
+  if (P.drill && P.drill.missed && !P.drill.done) h = (h ? h.replace('btn big', 'btn big ghost') : '') + '<button class="btn big" data-act="chdskip" style="margin-top:6px">Next ▶ (counts as a miss)</button>';
   $('#cpFoot').innerHTML = '<div class="in">' + h + '</div>';
   $('#cpFoot').classList.toggle('hidden', !h);
 }
@@ -178,6 +184,7 @@ function tableHTML(cols, rows) { return '<div class="tblWrap"><table class="tbl"
 function after() {
   var ch = P.ch, ok = P.res && P.res.every(Boolean), noErr = !P.errLine;
   if (ch.explore && P.res) { var key = P.typed ? 'T:' + P.text : JSON.stringify(P.vals); var e = G.chExplore(ch, key); if (e) { X().toast('🧪 New experiment! +' + e.xp + ' XP (' + e.n + ')'); X().header(); } drawGoals(); }
+  if (P.drill) { if (goalsDone()) { X().SFX.good(); drillEnd(true); } else { X().SFX.bad(); drillMiss(); } return; }
   if (goalsDone()) { X().SFX.good(); if (!P.rewarded) win(); else X().toast('✅ Still works!'); }
   else { if (P.res && P.res.some(Boolean)) X().SFX.combo(P.res.filter(Boolean).length); else X().SFX.bad(); if (bossOut()) setTimeout(bossLost, 600); }
 }
@@ -189,6 +196,7 @@ function win() {
   if (!P) return;
   var ch = P.ch; P.rewarded = true;
   var info = { vals: P.vals, code: code(), hintLv: P.hintLv, typed: P.typed };
+  var bs0 = ch.bot ? G.botStats() : null;
   var r = G.chRecord(ch, info), st = G.chState(ch.id);
   if (ch.sb === 'ai') st.sel = Object.keys(P.sel).filter(function (k) { return P.sel[k]; });
   if (ch.sb === 'git') { st.hist = P.git.history.slice(); var gr = P.git.gh.repos; for (var k in gr) if (gr[k].pages) { st.site = gr[k].pages; } }
@@ -202,11 +210,37 @@ function win() {
   if (P.hintLv >= 3 && r.first) h += '<div class="tiny" style="text-align:center">🗝️ Solution shown: reduced XP, no relic roll.</div>';
   r.drops.forEach(function (dr) { h += '<div class="card" style="border-color:var(--gold);text-align:center"><div style="font-size:40px">' + dr.ic + '</div><b>RELIC: ' + esc(dr.name) + '</b><div class="muted">' + esc(dr.eff) + '</div></div>'; });
   if (ch.proj) { var pg = G.projProgress(ch.proj[0]); h += '<div class="card"><b>' + PRJ[ch.proj[0]].icon + ' ' + esc(PRJ[ch.proj[0]].name) + '</b> · step ' + pg.done + '/' + pg.n + (pg.done === pg.n ? ' <b style="color:var(--good)">COMPLETE!</b>' : '') + '<div class="tiny">See it any time in 🏗️ Workshop.</div></div>'; }
+  if (ch.bot && r.first) { var bs1 = G.botStats(), pc = function (x) { return Math.round(x * 100) + '%'; }; h += '<div class="card botDelta"><b>🤖 Module installed: ' + esc(ch.title) + '</b><div class="tiny">' + esc(ch.bot.eff) + '</div><div class="stats3"><div class="stat"><small>Success</small><b>' + pc(bs0.success) + ' → ' + pc(bs1.success) + '</b></div><div class="stat"><small>Tasks/hr</small><b>' + bs0.tph + ' → ' + bs1.tph + '</b></div><div class="stat"><small>🪙/hr</small><b>' + bs0.coinsPerHr + ' → ' + bs1.coinsPerHr + '</b></div></div><div class="tiny">See it run in 🤖 Your Bot.</div></div>'; }
   if (ch.boss) h += '<div class="card"><b>⚔️ Boss challenge cleared!</b><div class="muted">Final step: the boss review exam on the 🔨 Build home page.</div></div>';
   var nx = nextAfter(ch);
   h += '<div class="row" style="gap:8px;margin-top:12px"><button class="btn ghost grow" data-act="chkeep">🔬 Keep tinkering</button>' + (nx ? '<button class="btn grow" data-act="chnext" data-v="' + nx.id + '">Next ▶</button>' : '<button class="btn grow" data-act="chquit">Done</button>') + '</div>' + (nx ? '<div class="tiny" style="text-align:center;margin-top:6px">Next: ' + (nx.icon || '') + ' ' + esc(nx.title) + '</div>' : '') + '</div>';
   var d = $('#cpDone'); d.innerHTML = h; d.classList.remove('hidden'); d.scrollTop = 0;
 }
+// ---------------- drills (mastery) ----------------
+function drillMiss() {
+  if (!P || !P.drill || P.drill.done) return; var first = !P.drill.missed; P.drill.missed = true;
+  var h = '<div class="cpHintBox drMiss"><b>❌ Not yet.</b> ' + md(P.ch.explain || '').replace(/^<p>|<\/p>$/g, '') + '</div>' + '<div class="cpHintBox sol">🗝️ ' + solText() + '</div>';
+  $('#cpHint').innerHTML = h;
+  if (first) drawFoot();
+  var hb = $('#cpHint'); if (hb && hb.scrollIntoView) hb.scrollIntoView({ block: 'nearest' });
+}
+function drillEnd(ok) {
+  if (!P || !P.drill || P.drill.done) return;
+  var d = P.drill; d.done = true; var ms = Date.now() - d.t0;
+  var unaided = ok && !d.missed && !(P.ch.sb === 'git' && P.runs > P.ch.sol.length + 2);
+  var out = d.o.onResult ? d.o.onResult({ ok: ok, unaided: unaided, ms: ms }) : {};
+  drawFoot();
+  var h = '<div class="discCard drDone"><div class="bigic">' + (unaided ? (out.speed > 1 ? '⚡' : '✅') : ok ? '🔧' : '📘') + '</div><h2>' + (unaided ? 'Nailed it' : ok ? 'Fixed (counts as practice, not mastery)' : 'Study this one') + '</h2>' +
+    (ok ? '' : '<div class="discTxt">' + md(P.ch.explain || '') + '</div>') +
+    '<div class="stats3"><div class="stat"><small>XP</small><b style="color:var(--good)">+' + (out.xp || 0) + '</b></div><div class="stat"><small>Time</small><b>' + Math.round(ms / 1000) + 's' + (out.speed > 1 ? ' ⚡' : '') + '</b></div><div class="stat"><small>Combo</small><b>🔥' + (d.o.comboNow ? d.o.comboNow() : 0) + '</b></div></div>' +
+    (out.levelUp ? '<div class="card" style="border-color:var(--gold);text-align:center"><b>' + out.levelUp.ic + ' ' + esc(d.o.conceptName || '') + ' is now ' + out.levelUp.n + '!</b>' + (out.insight ? ' +' + out.insight + ' 💠' : '') + '</div>' : '') +
+    (out.drops || []).map(function (dr) { return '<div class="card" style="border-color:var(--gold);text-align:center"><div style="font-size:36px">' + dr.ic + '</div><b>RELIC: ' + esc(dr.name) + '</b><div class="muted">' + esc(dr.eff) + '</div></div>'; }).join('') +
+    '<button class="btn big" data-act="chdnext" style="margin-top:10px">' + (d.o.last ? 'Finish ▶' : 'Next drill ▶') + '</button></div>';
+  var dd = $('#cpDone'); dd.innerHTML = h; dd.classList.remove('hidden'); dd.scrollTop = 0;
+  if (unaided) X().confetti(out.speed > 1 ? 60 : 30);
+}
+setInterval(function () { if (!P || !P.drill || P.drill.done) return; var e = $('#drTimer'); if (e) e.textContent = Math.round((Date.now() - P.drill.t0) / 1000) + 's'; }, 500);
+
 function nextAfter(ch) { var l = G.CH_TRACK[ch.t] || [], i = l.indexOf(ch); for (var k = i + 1; k < l.length; k++) if (G.chOpen(l[k]) && !G.chSolved(l[k].id)) return l[k]; return G.chNext(); }
 
 // ---------------- stepper (debugger) ----------------
@@ -334,6 +368,7 @@ function gitRun() {
   P.res = SB.checkGit(ch, g); drawGoals(); if (ch.boss) drawStory();
   X().SFX[err ? 'bad' : 'tap']();
   drawGit();
+  if (P.drill) { if (err) P.drill.errs++; if (goalsDone()) { X().SFX.good(); var me1 = P; setTimeout(function () { if (P === me1) drillEnd(true); }, 300); } else if (P.drill.errs >= 3 && !P.drill.missed) drillMiss(); return; }
   if (goalsDone() && !P.rewarded) { X().SFX.good(); setTimeout(win, 350); }
   else if (bossOut()) setTimeout(bossLost, 600);
 }
@@ -402,6 +437,9 @@ function act(a, v, el) {
   if (!P && a !== 'chopen' && a !== 'chview' && a !== 'chviewx' && a !== 'chproj') return;
   if (a === 'chopen') return open(v);
   if (a === 'chquit') return close();
+  if (a === 'chdgive') { if (P.drill && !P.drill.done) { if (!P.drill.missed) drillMiss(); else drillEnd(false); } return; }
+  if (a === 'chdskip') return drillEnd(false);
+  if (a === 'chdnext') { var o = P.drill && P.drill.o; if (o && o.onNext) return o.onNext(); return close(); }
   if (a === 'chrun') return run();
   if (a === 'chslot') { X().SFX.tap(); return openSlot(v); }
   if (a === 'chsheetx') { $('#cpSheet').classList.add('hidden'); return; }
@@ -444,18 +482,18 @@ function todayHTML() {
   h += '<div class="card trackHero" style="--tc:#7c5cff"><div class="row"><div class="bigIcon">🔨</div><div class="grow"><h2>Build something</h2><div class="muted">Every challenge is a small real program. Change it, run it, watch what happens, and discover the idea yourself. Daily goal: ' + G.DAILY_GOAL_XP + ' XP.</div></div></div>' +
     '<div class="bar" style="margin-top:10px"><i style="width:' + Math.min(100, S.daily.xp / G.DAILY_GOAL_XP * 100) + '%"></i><span>' + Math.min(S.daily.xp, G.DAILY_GOAL_XP) + ' / ' + G.DAILY_GOAL_XP + ' XP' + (S.daily.goal ? ' ✓' : '') + '</span></div>' +
     (nx ? '<button class="btn big" style="margin-top:12px" data-act="chopen" data-v="' + nx.id + '">▶ ' + (nx.icon || '') + ' ' + esc(nx.title) + '</button><div class="tiny" style="margin-top:6px;text-align:center">' + TRK[nx.t].icon + ' ' + esc(TRK[nx.t].name) + ' · ' + SBNAME[nx.sb] + ' · ' + window.DD.tiers[nx.tier - 1].name + (nx.proj ? ' · ' + PRJ[nx.proj[0]].icon + ' project' : '') + '</div>' : '<div class="muted" style="margin-top:10px">Every open challenge is solved. Beat the boss to open the next tier.</div>') + '</div>';
-  var due = G.allDue().length;
-  h += '<div class="card reviewCard"><div class="row"><div style="font-size:34px">🔁</div><div class="grow"><h3>Quick review</h3><div class="muted">' + (due ? '<b style="color:var(--gold)">' + due + ' quiz cards due</b>. Short spaced-repetition reviews keep what you discovered.' : 'No quiz cards due. The 📚 Review tab has the lessons.') + '</div></div></div>' + (due ? '<button class="btn gold big" style="margin-top:10px" data-act="review">Review ' + Math.min(due, 12) + ' due</button>' : '') + '</div>';
+  var dueC = G.conceptsDue().length, openC = G.conceptsOpen().length;
+  h += '<div class="card reviewCard"><div class="row"><div style="font-size:34px">🎯</div><div class="grow"><h3>Mastery slam</h3><div class="muted">' + (openC ? (dueC ? '<b style="color:var(--gold)">' + dueC + ' concept' + (dueC === 1 ? '' : 's') + ' due</b>. Tag-only drills with real tests. No hints.' : 'Nothing due. Slam anyway to push your weakest concepts.') : 'Solve a challenge to unlock its drills.') + '</div></div></div>' + (openC ? '<button class="btn gold big" style="margin-top:10px" data-act="msslam" data-v="6">⚡ Slam 6 drills</button>' : '') + '</div>';
   h += '<div class="sectionTitle">Daily deeds</div><div class="daily">' + G.DEEDS.map(function (d) { var ok = d.f(), cl = S.daily.claimed[d.id]; return '<div class="d ' + (cl ? 'done' : '') + '"><div style="font-size:20px">' + d.ic + '</div>' + d.txt + '<div style="margin-top:6px">' + (cl ? '✓ +' + d.r + ' 💠' : ok ? '<button class="btn sm green" data-act="deed" data-v="' + d.id + '">Claim ' + d.r + '💠</button>' : '<span class="tiny">+' + d.r + ' 💠</span>') + '</div></div>'; }).join('') + '</div>';
   if (S.tier < 5) {
     var bc = ts.bossCh, bcOpen = bc && G.chOpen(bc);
-    h += '<div class="card bossCard" style="margin-top:12px"><div class="row"><div class="bossIc">' + tier.bossIcon + '</div><div class="grow"><div class="tiny">TIER ' + T + ' BOSS · ' + tier.icon + ' ' + tier.name.toUpperCase() + '</div><h3>' + tier.boss + '</h3><div class="muted">Two phases: <b>' + (bc ? esc(bc.title) : 'a build') + '</b> under pressure, then a ' + 10 + '-question review exam (8 hits before 3 misses). Winning promotes you to <b>' + G.RANKS[T].name + '</b>.</div></div></div>' +
+    h += '<div class="card bossCard" style="margin-top:12px"><div class="row"><div class="bossIc">' + tier.bossIcon + '</div><div class="grow"><div class="tiny">TIER ' + T + ' BOSS · ' + tier.icon + ' ' + tier.name.toUpperCase() + '</div><h3>' + tier.boss + '</h3><div class="muted">Two phases: <b>' + (bc ? esc(bc.title) : 'a build') + '</b> under pressure, then an 8-drill mastery exam (6 unaided to win). Winning promotes you to <b>' + G.RANKS[T].name + '</b>.</div></div></div>' +
       '<div class="req"><span>' + (ts.chSolved >= ts.chNeed ? '✅' : '⬜') + '</span> Solve ' + ts.chNeed + ' of ' + ts.chN + ' ' + tier.name + ' challenges (' + ts.chSolved + ')</div>' +
-      '<div class="req"><span>' + (ts.mastery >= ts.need ? '✅' : '⬜') + '</span> Quiz mastery ' + Math.round(ts.mastery * 100) + '% / ' + Math.round(ts.need * 100) + '% (📚 Review tab)</div>' +
-      '<div class="bar small" style="margin-top:6px"><i style="width:' + Math.min(100, (ts.chNeed ? ts.chSolved / ts.chNeed : 1) * 50 + Math.min(1, ts.mastery / ts.need) * 50) + '%;background:linear-gradient(90deg,#ff3d7f,#fb923c)"></i></div>' +
+      '<div class="req"><span>' + (ts.mPr >= ts.mNeed ? '✅' : '⬜') + '</span> ' + ts.mNeed + ' of ' + ts.mN + ' ' + tier.name + ' concepts 🛠️ Practiced in 🎯 Mastery (' + ts.mPr + ')</div>' +
+      '<div class="bar small" style="margin-top:6px"><i style="width:' + Math.min(100, (ts.chNeed ? Math.min(1, ts.chSolved / ts.chNeed) : 1) * 50 + (ts.mNeed ? Math.min(1, ts.mPr / ts.mNeed) : 1) * 50) + '%;background:linear-gradient(90deg,#ff3d7f,#fb923c)"></i></div>' +
       (ts.cooldown ? '<div class="tiny" style="margin-top:8px">Regrouping after a loss… exam opens again in ' + E.dur(ts.cooldown) + '</div>' : '') +
       (bc ? '<button class="btn red big" style="margin-top:10px" data-act="chopen" data-v="' + bc.id + '" ' + (bcOpen ? '' : 'disabled') + '>' + (G.chSolved(bc.id) ? '✅ Phase 1 cleared · replay' : '⚔️ Phase 1: ' + esc(bc.title)) + '</button>' : '') +
-      '<button class="btn red big" style="margin-top:8px" data-act="boss" data-v="' + T + '" ' + (ts.ready && ts.bossChDone && !ts.cooldown ? '' : 'disabled') + '>📝 Phase 2: the review exam</button></div>';
+      '<button class="btn red big" style="margin-top:8px" data-act="msboss" data-v="' + T + '" ' + (ts.ready && ts.bossChDone && !ts.cooldown ? '' : 'disabled') + '>🎯 Phase 2: the mastery exam</button></div>';
   } else h += '<div class="card bossCard"><h3>🐉 Every boss defeated</h3><div class="muted">You are an AI-Native Lead. Finish every challenge and project, and keep reviewing.</div></div>';
   h += '<div class="sectionTitle">Build tracks · swipe ➜</div><div class="trackGrid">' + CHD.tracks.map(function (t, i) { var st = G.chTrackStats(t.id), un = G.chTrackUnlocked(t.id); return '<button class="tg" style="text-align:left;' + (un ? '' : 'opacity:.45') + '" data-act="sub" data-v="' + (i + 1) + '"><div class="row"><span style="font-size:22px">' + t.icon + '</span><div class="grow"><b style="font-size:13px">' + esc(t.name) + '</b><div class="tiny">' + (un ? st.solved + '/' + st.n + ' built' : '🔒 ' + lockTxt(t)) + '</div></div></div><div class="bar small"><i style="width:' + (st.n ? st.solved / st.n * 100 : 0) + '%;background:' + t.color + '"></i></div></button>'; }).join('') + '</div>';
   return h;
@@ -499,5 +537,5 @@ function viewBuild(id) { // replay a solved build live
   else m.innerHTML = '<div class="muted">Prompt parts you used: ' + ((st.sel || []).map(function (k) { var p = ch.ai.parts.filter(function (x) { return x.id === k; })[0]; return p ? esc(p.txt) : ''; }).join(' · ')) + '</div>';
 }
 
-window.PLAY = { open: open, close: close, act: act, todayHTML: todayHTML, trackHTML: trackHTML, workshopHTML: workshopHTML, get P() { return P; }, graphSVG: graphSVG };
+window.PLAY = { release: function () { P = null; }, open: open, close: close, act: act, todayHTML: todayHTML, trackHTML: trackHTML, workshopHTML: workshopHTML, get P() { return P; }, graphSVG: graphSVG };
 })();

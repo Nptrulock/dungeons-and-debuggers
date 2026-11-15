@@ -132,7 +132,7 @@ function drillResult(sess, ch, r) { // r: {ok, unaided, ms}
 function finishSlam(sess) {
   var n = sess.results.length, ok = sess.results.filter(function (x) { return x.unaided; }).length, r = { n: n, ok: ok, xp: 0, insight: 0, drops: [], won: false };
   if (sess.kind === 'mboss') {
-    var need = Math.ceil(n * 0.75); r.need = need; r.won = ok >= need;
+    var need = Math.ceil(sess.drills.length * 0.75); r.need = need; r.won = ok >= need;
     if (r.won) { S.tier = Math.max(S.tier, sess.tierN); S.stats.bosses++; r.xp = 300 * sess.tierN; r.insight = 60 * sess.tierN; r.drops = rollRelic('boss'); }
     else { S.bossCd[sess.tierN] = Date.now() + BOSS_COOLDOWN; r.xp = 20; }
   } else if (n) {
@@ -146,11 +146,11 @@ function finishSlam(sess) {
 
 // ---------- v3: Your Bot ----------
 var TASK_TYPES = [
-  { id: 'email', ic: '📧', name: 'Sort the support inbox', tier: 0, val: 3, inj: 1 },
-  { id: 'report', ic: '📊', name: 'Generate the daily report', tier: 1, val: 5, sched: 1 },
-  { id: 'bug', ic: '🐞', name: 'Triage new bug reports', tier: 2, val: 8 },
-  { id: 'support', ic: '💬', name: 'Answer questions from the docs', tier: 3, val: 12, kb: 1, inj: 1 },
-  { id: 'deploy', ic: '🚀', name: 'Deploy approved changes', tier: 4, val: 20, risky: 1 }];
+  { id: 'email', ic: '📧', name: 'Sort the support inbox', tier: 0, val: 0.75, inj: 1 },
+  { id: 'report', ic: '📊', name: 'Generate the daily report', tier: 1, val: 1.25, sched: 1 },
+  { id: 'bug', ic: '🐞', name: 'Triage new bug reports', tier: 2, val: 2 },
+  { id: 'support', ic: '💬', name: 'Answer questions from the docs', tier: 3, val: 3, kb: 1, inj: 1 },
+  { id: 'deploy', ic: '🚀', name: 'Deploy approved changes', tier: 4, val: 5, risky: 1 }];
 var BOT_STAGES = [{ id: 'trigger', ic: '⏰', n: 'Trigger' }, { id: 'parse', ic: '🧾', n: 'Parse' }, { id: 'decide', ic: '🧠', n: 'Decide' }, { id: 'tool', ic: '🔧', n: 'Tool' }, { id: 'verify', ic: '🔍', n: 'Verify' }, { id: 'done', ic: '✅', n: 'Done' }];
 function botMods() { return CHD.list.filter(function (c) { return c.bot; }); }
 function hasMod(id) { return chSolved(id); }
@@ -168,7 +168,7 @@ function botStats() {
   st.workers = (h('bm-queue') ? 3 : 1) + lv('monitor');
   var hw = (1 + 0.15 * lv('keyboard')) * (1 + 0.10 * lv('chair')) * (1 + 0.20 * lv('intern')) * (lv('cat') ? 1.05 : 1) * (hasRelic('kbd') ? 2 : 1) * (1 + 0.10 * lv('apply'));
   st.mastery = 1 + 0.02 * practicedCount();
-  st.tph = Math.round(300 * st.workers * (h('bm-webhook') ? 1.3 : 1) * (h('bm-cron') ? 1.15 : 1) * (h('bm-hitl') ? 0.92 : 1) * hw * st.mastery * st.uptime);
+  st.tph = Math.round(1200 * st.workers * (h('bm-webhook') ? 1.3 : 1) * (h('bm-cron') ? 1.15 : 1) * (h('bm-hitl') ? 0.92 : 1) * hw * st.mastery * st.uptime);
   st.cost = Math.max(0.002, 0.02 * (h('bm-cost') ? 0.4 : 1) * (h('bm-context') ? 0.7 : 1) + (h('bm-fewshot') ? 0.002 : 0) + (h('bm-rag') ? 0.003 : 0) + (h('bm-retry') ? 0.001 : 0));
   st.dlq = lv('queue') ? 0.3 : 0; st.measured = h('bm-eval'); st.matrix = h('bm-confusion'); st.alerts = h('bm-monitor'); st.logs = h('bm-log');
   var types = botTypes(), sum = 0; st.byType = {};
@@ -184,7 +184,7 @@ function botSuccessP(st, t) {
   if (t.sched && !hasMod('bm-cron')) p *= 0.6; // nobody triggers the report on time
   return Math.max(0, p + (1 - p) * st.dlq * 0.5);
 }
-var COST_COINS = 10; // coins per $ of model/API spend
+var COST_COINS = 2.5; // coins per $ of model/API spend
 function taskCoins(st, t) { return t.val * coinMult(); }
 var ERR_TXT = {
   parse: ['parse', 'ParseError: no "Subject:" line found'], context: ['parse', 'Context overflow: 9,812 tokens > 8,192 limit'], decide: ['decide', 'Misrouted: an invoice was labeled spam'], kb: ['decide', 'Hallucinated an answer: no docs retrieved'],
@@ -655,8 +655,8 @@ function chRecord(c, info) { // info: {vals, code, hintLv, runs, typed}
   checkDailyGoal(); r.ach = checkAch(); save();
   return r;
 }
-function chRun(c) { var st = S.ch[c.id] || (S.ch[c.id] = { runs: 0, hintLv: 0 }); st.runs = (st.runs || 0) + 1; save(); return st.runs; }
-function chHint(c, level) { var st = S.ch[c.id] || (S.ch[c.id] = { runs: 0, hintLv: 0 }); if (!st.solved) st.hintLv = Math.max(st.hintLv || 0, level); save(); return st.hintLv; }
+function chRun(c) { if (c.drill) return 0; var st = S.ch[c.id] || (S.ch[c.id] = { runs: 0, hintLv: 0 }); st.runs = (st.runs || 0) + 1; save(); return st.runs; }
+function chHint(c, level) { if (c.drill) return 0; var st = S.ch[c.id] || (S.ch[c.id] = { runs: 0, hintLv: 0 }); if (!st.solved) st.hintLv = Math.max(st.hintLv || 0, level); save(); return st.hintLv; }
 function chExplore(c, key) { // reward distinct experiments
   var st = S.ch[c.id] || (S.ch[c.id] = { runs: 0, hintLv: 0 }); st.ex = st.ex || [];
   if (st.ex.indexOf(key) >= 0 || st.ex.length >= Math.max(6, (c.explore || 0) * 2)) return null;
