@@ -466,6 +466,16 @@ window.UI = {
 };
 
 // ---------------- boot ----------------
+(function safeAreaFallback() { // home-screen iOS with a translucent status bar but no reported inset: keep content clear of it
+  try {
+    var standalone = window.navigator.standalone || (window.matchMedia && matchMedia('(display-mode: standalone)').matches);
+    if (/[?&]simsafe/.test(location.search)) document.documentElement.classList.add('simsafe');
+    if (!standalone) return;
+    var d = document.createElement('div'); d.style.cssText = 'position:fixed;top:0;left:0;visibility:hidden;padding-top:env(safe-area-inset-top,0px)'; document.body.appendChild(d);
+    var t = parseFloat(getComputedStyle(d).paddingTop) || 0; d.remove();
+    if (t < 20 && /iPhone|iPad|iPod/.test(navigator.userAgent)) document.documentElement.style.setProperty('--sat', '47px');
+  } catch (e) { }
+})();
 var had = G.load();
 G.rollDay();
 var off = had ? G.offlineCatchup() : null;

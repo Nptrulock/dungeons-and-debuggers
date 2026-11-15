@@ -48,7 +48,7 @@ function drawTitle() {
   $('#cpTitle').innerHTML = '<div class="tiny">' + t.icon + ' ' + esc(t.name) + ' · ' + SBNAME[ch.sb] + (ch.proj ? ' · ' + PRJ[ch.proj[0]].icon + ' ' + esc(PRJ[ch.proj[0]].name) + ' ' + ch.proj[1] + '/' + G.projSteps(ch.proj[0]).length : '') + '</div><b>' + (ch.icon || '') + ' ' + esc(ch.title) + '</b>';
 }
 function drawStory() {
-  if (P.drill) { $('#cpStory').innerHTML = ''; return; }
+  if (P.drill) { $('#cpStory').innerHTML = P.ch.title.length > 40 ? '<div class="cpTask">🎯 ' + esc(P.ch.title) + '</div>' : ''; return; }
   var ch = P.ch, h = '<div class="cpStory">' + md(ch.story) + '</div>';
   if (ch.explore) h += '<div class="cpExplore">🧪 <b>Experiment zone</b>: every different version you run earns XP. Try at least ' + ch.explore + '.</div>';
   if (ch.boss) h += '<div class="cpBossNote">⚔️ Boss rules: ' + (ch.sb === 'git' ? 'at most <b>' + ch.runs + '</b> commands.' : '<b>' + ch.runs + '</b> runs to get every goal green.') + ' Runs used: <b id="cpRunsUsed">' + P.runs + '</b></div>';

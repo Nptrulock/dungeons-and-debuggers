@@ -83,7 +83,7 @@ with sync_playwright() as p:
     tap(pg,'[data-act=tab][data-v=learn]'); pg.wait_for_timeout(300)
     pg.screenshot(path=SHOTS+'phone-mastery.png')
     tap(pg,'[data-act=msslam][data-v="6"]'); pg.wait_for_timeout(400)
-    rec('drill view: tag only (no story, no hint button, goals hidden)', pg.locator('#cpStory').inner_text().strip()=='' and pg.locator('[data-act=chhint]').count()==0 and pg.locator('#cpGoals .goal').count()==0)
+    rec('drill view: tag only (no story, no hint button, goals hidden)', pg.locator('#cpStory .cpStory, #cpStory .cpExplore').count()==0 and pg.locator('[data-act=chhint]').count()==0 and pg.locator('#cpGoals .goal').count()==0)
     try:
         summ, missed=run_slam(pg, miss_first=True, shot=SHOTS+'phone-drill.png')
         st=pg.evaluate("({slams:__DD.G.S.stats.slams, drills:__DD.G.S.stats.drills, ok:__DD.G.S.stats.drillOk, m:Object.keys(__DD.G.S.mastery).length})")
