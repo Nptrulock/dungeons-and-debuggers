@@ -5,7 +5,7 @@
 <script src="../challenges/core.js"></script>
 <script>
 // load challenge files listed in index.html order (synchronously via XHR)
-(function(){ var x = new XMLHttpRequest(); x.open('GET', '../index.html', false); x.send(); var files = (x.responseText.match(/<script src="challenges\/[^"]+"/g) || []).map(function(s){ return s.slice(13, -1); }).filter(function(f){ return f !== 'challenges/core.js'; });
+(function(){ var x = new XMLHttpRequest(); x.open('GET', '../index.html', false); x.send(); var files = (x.responseText.match(/<script src="(challenges|drills)\/[^"]+"/g) || []).map(function(s){ return s.slice(13, -1); }).filter(function(f){ return f !== 'challenges/core.js'; });
   files.forEach(function(f){ var r = new XMLHttpRequest(); r.open('GET', '../' + f, false); r.send(); (0, eval)(r.responseText); }); })();
 </script>
 <script src="../lib/gitsim.js"></script>
@@ -45,5 +45,29 @@ async function verify(filter) {
     out.push(item); log((item.ok ? '✔ ' : '✘ ') + ch.id + (item.ok ? '' : ' ' + JSON.stringify(item)), item.ok);
   }
   window.__VERIFY = out; window.__DONE = true; return out;
+}
+// drills: N seeds per generator (recorded generators use their k fixed variants); start must fail, reference must pass
+async function verifyDrills(n, filter) {
+  var res = [], DR = window.DRILLS;
+  for (var gi = 0; gi < DR.gens.length; gi++) {
+    var g = DR.gens[gi]; if (filter && filter.indexOf(g.id) < 0 && filter.indexOf(g.sb) < 0) continue;
+    var seeds = []; var cnt = g.k ? g.k : n; for (var s = 0; s < cnt; s++) seeds.push(g.k ? s : (s * 7919 + 13) % 100000);
+    var item = { id: g.id, sb: g.sb, n: 0, ok: 0, fails: [], variants: {} };
+    for (var si = 0; si < seeds.length; si++) {
+      var ch; try { ch = DR.make(g.id, seeds[si]); } catch (e) { item.fails.push({ seed: seeds[si], exc: 'gen: ' + e.message }); item.n++; continue; }
+      item.variants[ch.vkey] = 1; item.n++;
+      try {
+        var start, sol;
+        if (ch.sb === 'git') { start = await runGit(ch, []); sol = await runGit(ch, ch.sol); }
+        else if (ch.sb === 'ai') { start = await runAI(ch, []); sol = await runAI(ch, ch.sol); }
+        else { start = await runOne(ch, CHD.startVals(ch)); sol = await runOne(ch, CHD.solVals(ch)); }
+        var sf = !(start.res.length && start.res.every(Boolean)), sp = sol.res.length === ch.goals.length && sol.res.every(Boolean) && ch.goals.length > 0;
+        if (sf && sp) item.ok++; else item.fails.push({ seed: seeds[si], tag: ch.title, startFails: sf, solPasses: sp, sol: sol.res, solErr: sol.err, logs: (sol.logs || []).slice(-6), start: start.res });
+      } catch (e) { item.fails.push({ seed: seeds[si], exc: String(e && e.message || e) }); }
+    }
+    item.distinct = Object.keys(item.variants).length; delete item.variants;
+    res.push(item); log((item.ok === item.n ? '✔ ' : '✘ ') + g.id + ' ' + item.ok + '/' + item.n + ' (' + item.distinct + ' distinct)', item.ok === item.n);
+  }
+  window.__VD = res; return res;
 }
 </script></body></html>
