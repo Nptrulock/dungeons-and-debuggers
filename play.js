@@ -70,6 +70,12 @@ function drawHint() {
   if (P.hintLv >= 3) h += '<div class="cpHintBox sol">🗝️ ' + solText() + '</div>';
   $('#cpHint').innerHTML = h;
 }
+function drillSol() {
+  var ch = P.ch;
+  if (ch.sb === 'git') return 'Answer: <code>' + ch.sol.map(esc).join('</code> → <code>') + '</code>';
+  if (ch.sb === 'ai') return 'Answer: include ' + ch.sol.map(function (k) { var p = ch.ai.parts.filter(function (x) { return x.id === k; })[0]; return '<b>' + esc(p ? p.txt : k) + '</b>'; }).join(' + ') + '.';
+  return 'Answer: ' + Object.keys(ch.sol || {}).map(function (k) { return '<code>' + esc(String(ch.sol[k])) + '</code>'; }).join(' and ') + '. Set it, then ▶ Run (counts as practice), or move on.';
+}
 function solText() {
   var ch = P.ch;
   if (ch.sb === 'git') return 'One way: <code>' + ch.sol.map(esc).join('</code> → <code>') + '</code>';
@@ -219,7 +225,7 @@ function win() {
 // ---------------- drills (mastery) ----------------
 function drillMiss() {
   if (!P || !P.drill || P.drill.done) return; var first = !P.drill.missed; P.drill.missed = true;
-  var h = '<div class="cpHintBox drMiss"><b>❌ Not yet.</b> ' + md(P.ch.explain || '').replace(/^<p>|<\/p>$/g, '') + '</div>' + '<div class="cpHintBox sol">🗝️ ' + solText() + '</div>';
+  var h = '<div class="cpHintBox drMiss"><b>❌ Not yet.</b> ' + md(P.ch.explain || '').replace(/^<p>|<\/p>$/g, '') + '</div>' + '<div class="cpHintBox sol">🗝️ ' + drillSol() + '</div>';
   $('#cpHint').innerHTML = h;
   if (first) drawFoot();
   var hb = $('#cpHint'); if (hb && hb.scrollIntoView) hb.scrollIntoView({ block: 'nearest' });
