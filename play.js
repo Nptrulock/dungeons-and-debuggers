@@ -31,8 +31,8 @@ function open(id) {
   X().audioInit(); X().SFX.select();
   drawAll();
   if (ch.sb === 'html') livePreview();
-  if (ch.sb === 'py') SB.pyLoad(function (s) { con('⏳ ' + s, 'sys'); }).then(function () { con('🐍 Python ' + 'is ready.', 'sys'); }, function (e) { con('⚠️ ' + e.message, 'err'); });
-  if (ch.sb === 'sql') SB.sqlLoad(function (s) { setOut('<div class="muted">⏳ ' + esc(s) + '</div>'); }).then(function () { if (!P.res) setOut('<div class="muted">🗄️ SQLite is ready. Press ▶ Run to query the database.</div>'); }, function (e) { setOut('<div class="cpErr">⚠️ ' + esc(e.message) + '</div>'); });
+  if (ch.sb === 'py') SB.pyLoad(function (s) { con('⏳ ' + s, 'sys'); }).then(function () { con('🐍 Python ' + 'is ready.', 'sys'); }, function (e) { if (!alive()) return; con('⚠️ ' + e.message, 'err'); });
+  if (ch.sb === 'sql') SB.sqlLoad(function (s) { setOut('<div class="muted">⏳ ' + esc(s) + '</div>'); }).then(function () { if (!P.res) setOut('<div class="muted">🗄️ SQLite is ready. Press ▶ Run to query the database.</div>'); }, function (e) { if (!alive()) return; setOut('<div class="cpErr">⚠️ ' + esc(e.message) + '</div>'); });
 }
 function close() {
   if (P && !P.won) { var st = G.chState(P.ch.id); if (st || P.runs) { G.S.ch[P.ch.id] = G.S.ch[P.ch.id] || { runs: 0, hintLv: 0 }; G.S.ch[P.ch.id].draft = P.vals; G.save(); } }
@@ -132,17 +132,18 @@ function drawFoot() {
 }
 function bossOut() { return P.ch.boss && P.ch.runs && P.runs >= P.ch.runs && !goalsDone(); }
 function run() {
-  if (!P || P.busy) return; var ch = P.ch;
+  if (!P || P.busy) return; var ch = P.ch, me = P, alive = function () { return P === me; };
   if (ch.boss && P.runs >= ch.runs) return bossLost();
   P.busy = true; P.runs++; G.chRun(ch); X().SFX.tap(); drawFoot(); if (ch.boss) drawStory();
   var c = code(); P.errLine = 0; P.steps = null; P.step = 0;
-  var done = function (res) { P.busy = false; P.res = res; drawGoals(); drawCode(); drawStepper(); drawFoot(); after(); };
+  var done = function (res) { if (!alive()) return; P.busy = false; P.res = res; drawGoals(); drawCode(); drawStepper(); drawFoot(); after(); };
   if (ch.sb === 'html' || ch.sb === 'js') {
     conClear(); var vm = viewMode(), mount = vm === 'console' ? $('#cpHidden') : $('#cpOut');
     if (vm === 'console') setOut('');
     $('#cpOut').classList.toggle('hidden', vm === 'console');
     if (ch.sb === 'js') $('#cpCon').classList.remove('hidden');
-    SB.runFrame(ch, c, mount, { onLog: function (m) { con(m.s, m.k === 'error' ? 'err' : m.k === 'warn' ? 'warn' : ''); } }).then(function (r) {
+    SB.runFrame(ch, c, mount, { onLog: function (m) { if (!alive()) return; con(m.s, m.k === 'error' ? 'err' : m.k === 'warn' ? 'warn' : ''); } }).then(function (r) {
+      if (!alive()) return;
       if (r.timeout) con('⏱️ ' + r.errs[0].msg, 'err');
       if (ch.sb === 'js' && !r.logs.length && !r.errs.length && !r.timeout) con('(nothing was logged)', 'sys');
       if (r.errs && r.errs.length) P.errLine = r.errs[0].line > 0 ? r.errs[0].line : 0;
@@ -152,7 +153,8 @@ function run() {
     });
   } else if (ch.sb === 'py') {
     conClear(); con('$ python3 main.py', 'sys');
-    SB.runPy(ch, c, function (s) { con('⏳ ' + s, 'sys'); }).then(function (r) {
+    SB.runPy(ch, c, function (s) { if (alive()) con('⏳ ' + s, 'sys'); }).then(function (r) {
+      if (!alive()) return;
       (r.out || []).forEach(function (l) { con(l); });
       if (r.err) { con(r.err.tb || r.err.msg, 'err'); P.errLine = r.err.line || 0; }
       if (!r.err && !(r.out || []).length) con('(no output)', 'sys');
@@ -161,14 +163,15 @@ function run() {
       done(r.res);
     }, function (e) { con('⚠️ ' + e.message, 'err'); P.busy = false; P.runs--; drawFoot(); });
   } else if (ch.sb === 'sql') {
-    SB.runSql(ch, c, function (s) { setOut('<div class="muted">⏳ ' + esc(s) + '</div>'); }).then(function (r) {
+    SB.runSql(ch, c, function (s) { if (alive()) setOut('<div class="muted">⏳ ' + esc(s) + '</div>'); }).then(function (r) {
+      if (!alive()) return;
       var h = r.err ? '<div class="cpErr">❌ ' + esc(r.err.msg) + '</div>' : '';
       if (!r.results.length && !r.err) h += '<div class="muted">✔ Ran. (No rows returned.)</div>';
       r.results.forEach(function (t) { h += tableHTML(t.columns, t.values); });
       setOut(h); done(r.res);
     }, function (e) { setOut('<div class="cpErr">⚠️ ' + esc(e.message) + '</div>'); P.busy = false; P.runs--; drawFoot(); });
   } else if (ch.sb === 'cmp') {
-    drawCmp(null); setTimeout(function () { var r = SB.runCompiled(ch, P.vals); drawCmp(r); done(r.res); }, 450);
+    drawCmp(null); setTimeout(function () { if (!alive()) return; var r = SB.runCompiled(ch, P.vals); drawCmp(r); done(r.res); }, 450);
   } else if (ch.sb === 'ai') aiSend(done);
 }
 function tableHTML(cols, rows) { return '<div class="tblWrap"><table class="tbl"><tr>' + cols.map(function (c) { return '<th>' + esc(c) + '</th>'; }).join('') + '</tr>' + rows.slice(0, 50).map(function (r) { return '<tr>' + r.map(function (v) { return '<td>' + (v === null ? '<i class="muted">NULL</i>' : esc(v)) + '</td>'; }).join('') + '</tr>'; }).join('') + '</table>' + (rows.length > 50 ? '<div class="tiny">…' + (rows.length - 50) + ' more rows</div>' : '') + '<div class="tiny">' + rows.length + ' row' + (rows.length === 1 ? '' : 's') + '</div></div>'; }
@@ -179,9 +182,11 @@ function after() {
   else { if (P.res && P.res.some(Boolean)) X().SFX.combo(P.res.filter(Boolean).length); else X().SFX.bad(); if (bossOut()) setTimeout(bossLost, 600); }
 }
 function bossLost() {
+  if (!P) return;
   var d = $('#cpDone'); d.innerHTML = '<div class="discCard"><div class="bigic">💀</div><h2>Out of runs</h2><div class="muted">The boss wins this round. Your code is still here. Study the goals, then try again with a fresh set of ' + P.ch.runs + ' runs.</div><button class="btn big" data-act="chbossretry">Try again</button><button class="btn ghost" data-act="chquit" style="margin-top:8px">Leave</button></div>'; d.classList.remove('hidden');
 }
 function win() {
+  if (!P) return;
   var ch = P.ch; P.rewarded = true;
   var info = { vals: P.vals, code: code(), hintLv: P.hintLv, typed: P.typed };
   var r = G.chRecord(ch, info), st = G.chState(ch.id);
@@ -264,7 +269,7 @@ function drawMem() {
   var h = '<div class="memviz"><div class="row"><b class="grow">🧠 Memory, step ' + (k + 1) + '/' + steps.length + '</b><button class="btn sm ghost" data-act="chmem" data-v="-1">◀</button><button class="btn sm ghost" data-act="chmem" data-v="1">▶</button></div><div class="tiny">Line ' + s.l + ': ' + esc(s.note) + '</div>' +
     '<div class="memcols" id="memcols"><div class="memcol"><div class="tiny">STACK</div>' + (s.stack || []).map(function (v) { return box(v, 'stack'); }).join('') + '</div><div class="memcol"><div class="tiny">HEAP</div>' + ((s.heap || []).map(function (v) { return box(v, 'heap'); }).join('') || '<div class="tiny muted">(empty)</div>') + '</div><svg class="memsvg" id="memsvg"></svg></div>' +
     '<div class="tiny">Addresses are illustrative; real ones change every run. Arrows are pointers.</div></div>';
-  $('#cpExtra').innerHTML = h;
+  var ex0 = $('#cpExtra'), oldm = ex0.querySelector('.memviz'); if (oldm) oldm.outerHTML = h; else ex0.insertAdjacentHTML('afterbegin', h);
   setTimeout(function () { // arrows: a box whose value starts with 0x points at the box with that address
     var wrap = $('#memcols'), svg = $('#memsvg'); if (!wrap) return; var R = wrap.getBoundingClientRect(), paths = '';
     wrap.querySelectorAll('.mbox2').forEach(function (b) { var val = b.querySelector('.mval').textContent.trim(); if (!/^0x/.test(val)) return; var t = wrap.querySelector('.mbox2[data-addr="' + val + '"]'); if (!t || t === b) return; var a = b.getBoundingClientRect(), c = t.getBoundingClientRect(); var x1 = a.right - R.left - 4, y1 = a.top - R.top + a.height / 2, x2 = (c.left > a.left ? c.left : c.right) - R.left + (c.left > a.left ? 0 : 0), y2 = c.top - R.top + c.height / 2; var mx = Math.max(x1, x2) + 30; paths += '<path d="M' + x1 + ' ' + y1 + ' C' + mx + ' ' + y1 + ',' + mx + ' ' + y2 + ',' + (c.left > a.left ? x2 : c.right - R.left) + ' ' + y2 + '" fill="none" stroke="#fbbf24" stroke-width="2" marker-end="url(#ah)"/>'; });
@@ -358,15 +363,16 @@ function drawChat() {
 }
 function pickVariant() { var ch = P.ch, has = function (k) { return !!P.sel[k]; }; for (var i = 0; i < ch.ai.variants.length; i++) { var v = ch.ai.variants[i]; try { if (new Function('has', 'return (' + (v.when || 'true') + ')')(has)) return v; } catch (e) { } } return ch.ai.variants[ch.ai.variants.length - 1]; }
 function aiSend(done) {
-  var ch = P.ch, v = pickVariant();
+  var ch = P.ch, v = pickVariant(), me = P;
   P.chat.push({ who: 'you', txt: promptText() });
   var msg = { who: 'ai', say: '', code: '', files: v.files, bad: v.bad };
   P.chat.push(msg); drawChat();
   var full = v.say, i = 0;
-  var typer = setInterval(function () { i += 6; msg.say = full.slice(0, i); if (i >= full.length) { clearInterval(typer); msg.say = full; msg.code = v.code; drawChat(); test(); } else drawChat(); }, 16);
+  var typer = setInterval(function () { if (P !== me) { clearInterval(typer); return; } i += 6; msg.say = full.slice(0, i); if (i >= full.length) { clearInterval(typer); msg.say = full; msg.code = v.code; drawChat(); test(); } else drawChat(); }, 16);
   function test() {
     var sim = Object.assign({}, ch, { sb: 'js' });
     SB.runFrame(sim, v.code, $('#cpHidden'), {}).then(function (r) {
+      if (P !== me) return;
       msg.tests = '<div class="tiny">🧪 TESTS</div>' + ch.goals.map(function (g, k) { return '<div class="goal ' + (r.res[k] ? 'ok' : 'no') + '">' + (r.res[k] ? '✅ ' : '❌ ') + md(g[0]).replace(/^<p>|<\/p>$/g, '') + '</div>'; }).join('') + (r.errs.length ? '<div class="cpErr">' + esc(r.errs[0].msg) + '</div>' : '') + (r.logs.length ? '<pre class="cpOutPre">' + esc(r.logs.slice(0, 8).join('\n')) + '</pre>' : '');
       drawChat(); done(r.res);
     });
