@@ -27,21 +27,21 @@ var INSIGHT_UPG = [
   { id: 'hintRegen', ic: '🕯️', name: 'Curiosity', desc: 'Hints refill 12% faster per level', max: 5, base: 45, mult: 1.6 },
   { id: 'freeze', ic: '🧊', name: 'Streak Freeze', desc: 'Buy one freeze (holds max 3). Saves your streak on a missed day', max: 99, base: 60, mult: 1, consumable: true },
   { id: 'luck', ic: '🍀', name: 'Lucky Duck', desc: '+10% relic odds per level', max: 10, base: 60, mult: 1.45 },
-  { id: 'apply', ic: '⚙️', name: 'Applied Knowledge', desc: '+10% idle work speed per level', max: 20, base: 30, mult: 1.3 },
-  { id: 'offRate', ic: '🌙', name: 'Remote Work', desc: 'Offline work +5% of online rate (base 25%)', max: 7, base: 50, mult: 1.55 },
+  { id: 'apply', ic: '⚙️', name: 'Applied Knowledge', desc: '+10% bot tasks per hour per level', max: 20, base: 30, mult: 1.3 },
+  { id: 'offRate', ic: '🌙', name: 'Remote Work', desc: 'Offline bot rate +5% of online (base 25%)', max: 7, base: 50, mult: 1.55 },
   { id: 'offCap', ic: '🛏️', name: 'Long Weekend', desc: '+2h offline cap (base 4h)', max: 10, base: 40, mult: 1.45 },
   { id: 'daily', ic: '🎯', name: 'Discipline', desc: '+15% daily-goal reward per level', max: 5, base: 50, mult: 1.5 }
 ];
 var OFFICE_UPG = [
-  { id: 'keyboard', ic: '⌨️', name: 'Better Keyboard', desc: '+15% work speed', max: 25, base: 25, mult: 1.45 },
-  { id: 'chair', ic: '🪑', name: 'Ergonomic Chair', desc: '+10% work speed', max: 25, base: 60, mult: 1.5 },
-  { id: 'coffee', ic: '☕', name: 'Coffee Subscription', desc: '+12% coins per ticket', max: 25, base: 40, mult: 1.48 },
-  { id: 'monitor', ic: '🖥️', name: 'Extra Monitor', desc: 'Work one more ticket at the same time', max: 2, base: 400, mult: 6 },
-  { id: 'queue', ic: '📥', name: 'Ticket Queue', desc: 'QoL: finished tickets auto-claim and the next one starts, even offline', max: 1, base: 120, mult: 1 },
-  { id: 'intern', ic: '🧒', name: 'Hire an Intern', desc: '+20% work speed (they learn from you)', max: 10, base: 300, mult: 1.9 },
-  { id: 'ci', ic: '🤖', name: 'CI Bot', desc: '+8% reputation per ticket', max: 15, base: 150, mult: 1.6 },
-  { id: 'hat', ic: '🎩', name: 'Wizard Hat', desc: 'Cosmetic: a hat for your hero', max: 1, base: 500, mult: 1, cosmetic: '🎩' },
-  { id: 'cat', ic: '🐈', name: 'Office Cat', desc: 'Cosmetic + 5% work speed (morale)', max: 1, base: 800, mult: 1, cosmetic: '🐈' },
+  { id: 'keyboard', ic: '⚡', name: 'Faster CPU', desc: '+15% bot tasks per hour', max: 25, base: 25, mult: 1.45 },
+  { id: 'chair', ic: '💾', name: 'SSD Cache', desc: '+10% bot tasks per hour', max: 25, base: 60, mult: 1.5 },
+  { id: 'coffee', ic: '💳', name: 'Premium Clients', desc: '+12% coins per finished task', max: 25, base: 40, mult: 1.48 },
+  { id: 'monitor', ic: '🧵', name: 'Extra Worker Process', desc: '+1 worker running tasks in parallel', max: 2, base: 400, mult: 6 },
+  { id: 'queue', ic: '📥', name: 'Dead-Letter Queue', desc: 'Failed tasks are parked and retried later: recovers ~15% of failures', max: 1, base: 120, mult: 1 },
+  { id: 'intern', ic: '🖥️', name: 'GPU Box', desc: '+20% bot tasks per hour', max: 10, base: 300, mult: 1.9 },
+  { id: 'ci', ic: '🧪', name: 'CI Runner', desc: '+8% reputation per task', max: 15, base: 150, mult: 1.6 },
+  { id: 'hat', ic: '🎩', name: 'Wizard Hat', desc: 'Cosmetic: a hat for your hero (and your bot)', max: 1, base: 500, mult: 1, cosmetic: '🎩' },
+  { id: 'cat', ic: '🐈', name: 'Office Cat', desc: 'Cosmetic + 5% bot speed (morale)', max: 1, base: 800, mult: 1, cosmetic: '🐈' },
   { id: 'plant', ic: '🪴', name: 'Desk Plant', desc: 'Cosmetic + 5% coins', max: 1, base: 250, mult: 1, cosmetic: '🪴' }
 ];
 // ---------- relics (visible, exact odds) ----------
@@ -51,8 +51,8 @@ var RELICS = [
   { id: 'lens', ic: '🔍', name: "The Linter's Lens", src: 'correct', odds: 1500, eff: 'Hints remove two wrong answers instead of one' },
   { id: 'cape', ic: '🦸', name: '10x Developer Cape', src: 'boss', odds: 6, eff: 'Dual skill gain: every correct answer also trains a second track' },
   { id: 'ouro', ic: '♾️', name: 'Ouroboros of Flow', src: 'combo25', odds: 60, eff: 'Your combo never drops below 5 after a miss' },
-  { id: 'kbd', ic: '⌨️', name: 'Keyboard of Legend', src: 'ticket', odds: 5000, eff: 'Idle work speed x2' },
-  { id: 'brew', ic: '☕', name: 'Coffee of Eternity', src: 'daily', odds: 120, eff: 'Offline work +25% of online rate, +6h offline cap' },
+  { id: 'kbd', ic: '⌨️', name: 'Keyboard of Legend', src: 'ticket', odds: 5000, eff: 'Bot tasks per hour x2' },
+  { id: 'brew', ic: '☕', name: 'Coffee of Eternity', src: 'daily', odds: 120, eff: 'Offline bot rate +25% of online, +6h offline cap' },
   { id: 'crown', ic: '👑', name: 'Merge Crown', src: 'lesson', odds: 2000, eff: 'Coins x1.5 and reputation x1.5' },
   { id: 'brain', ic: '🧠', name: "Senior's Second Brain", src: 'master', odds: 400, eff: 'Insight x2' },
   { id: 'phoenix', ic: '🔥', name: 'Phoenix Commit', src: 'streak', odds: 90, eff: 'Once a week a missed day is forgiven for free' },
@@ -60,10 +60,168 @@ var RELICS = [
   { id: 'anvil', ic: '⚒️', name: 'Anvil of Discovery', src: 'challenge', odds: 350, eff: '+30% XP from hands-on challenges' },
   { id: 'prism', ic: '🔮', name: 'Prism of Curiosity', src: 'explore', odds: 40, eff: '+1 max hint token, and experiments give double XP' },
   { id: 'forge', ic: '🔥', name: 'First-Try Forge', src: 'firstrun', odds: 150, eff: 'First-run solves give +50% XP instead of +25%' },
+  { id: 'metro', ic: '⏱️', name: 'Slam Metronome', src: 'slam', odds: 40, eff: 'Speed bonuses in drills allow 50% more time' },
+  { id: 'gear', ic: '⚙️', name: 'Self-Healing Gear', src: 'fluent', odds: 25, eff: 'Your bot earns +25% coins per task' },
   { id: 'shinybug', ic: '🐞', name: 'Shiny Bug', src: 'shiny', odds: 1, eff: 'Stacks to 10: +5% XP each. Shiny questions appear 1 in 300' }
 ];
 var SRC_TXT = { perfect: 'per perfect lesson', correct: 'per correct answer', boss: 'per boss victory', combo25: 'each time a combo reaches 25', ticket: 'per ticket finished', daily: 'per daily goal met', lesson: 'per lesson completed', master: 'per question mastered', streak: 'per streak day (7+)', shiny: 'per shiny question answered right', challenge: 'per challenge solved', explore: 'per new experiment in an Experiment zone', firstrun: 'per challenge solved on the first run' };
 var SHINY_ODDS = 300;
+
+// ---------- v3: mastery drills ----------
+var DRL = root.DRILLS || { gens: [], byId: {}, make: function () { return null; } };
+var M_INT = [0, 0, 10 * MIN, 20 * HOUR, 3 * DAY, 7 * DAY, 16 * DAY];
+var M_LEVELS = [{ n: 'Locked', ic: '🔒' }, { n: 'Learned', ic: '🌱' }, { n: 'Practiced', ic: '🛠️' }, { n: 'Fluent', ic: '⚡' }, { n: 'Mastered', ic: '👑' }];
+var M_PRACTICED = 0.5; // share of a tier's drill concepts that must be Practiced before its boss
+var PAR = { html: 25, js: 25, py: 30, sql: 25, git: 40, ai: 30, cmp: 20 };
+function conceptUnlocked(g) { return (g.from || []).some(chSolved); }
+function mState(id) { return S.mastery[id] || null; }
+function mLevel(g) {
+  if (!conceptUnlocked(g)) return 0; var m = S.mastery[g.id]; if (!m) return 1;
+  var d = (m.days || []).length, v = (m.vars || []).length;
+  if (m.b >= 6 && d >= 3 && v >= 6 && m.streak >= 3) return 4;
+  if (m.b >= 4 && d >= 2 && v >= 4) return 3;
+  if (m.ok >= 2 && v >= 2) return 2;
+  return 1;
+}
+function mPct(g) { if (!conceptUnlocked(g)) return 0; var m = S.mastery[g.id]; if (!m) return 0; return Math.round(100 * (Math.min(1, m.b / 6) * 0.6 + Math.min(1, (m.vars || []).length / 6) * 0.2 + Math.min(1, (m.days || []).length / 3) * 0.2)); }
+function mDue(g, t) { if (!conceptUnlocked(g)) return false; var m = S.mastery[g.id]; return !m || (t || Date.now()) >= m.due; }
+function conceptsOpen() { return DRL.gens.filter(conceptUnlocked); }
+function conceptsDue() { var t = Date.now(); return DRL.gens.filter(function (g) { return mDue(g, t); }); }
+function practicedCount() { return DRL.gens.filter(function (g) { return mLevel(g) >= 2; }).length; }
+function tierConcepts(T) { return DRL.gens.filter(function (g) { return DRL.tierOf(g) === T; }); }
+function interleave(list) { // avoid two drills from the same track in a row
+  var out = [], pool = list.slice();
+  while (pool.length) { var last = out.length ? out[out.length - 1].t : null, i = pool.findIndex(function (g) { return g.t !== last; }); if (i < 0) i = 0; out.push(pool.splice(i, 1)[0]); }
+  return out;
+}
+function pickSlam(n, opt) {
+  opt = opt || {}; var open = opt.pool || conceptsOpen(); if (!open.length) return null;
+  var t = Date.now(), due = shuffle(open.filter(function (g) { return mDue(g, t); })), rest = shuffle(open.filter(function (g) { return !mDue(g, t); })).sort(function (a, b) { return mPct(a) - mPct(b); });
+  var order = due.concat(rest), pick = [];
+  for (var i = 0; pick.length < n && i < n * 3; i++) pick.push(order[i % order.length]);
+  pick = interleave(pick);
+  var drills = pick.map(function (g) { return DRL.make(g.id, DRL.randomSeed()); });
+  return { kind: opt.boss ? 'mboss' : 'slam', tierN: opt.boss || 0, drills: drills, i: 0, combo: 0, best: 0, results: [], xp: 0, insight: 0, t0: Date.now(), drops: [], ups: [] };
+}
+function drillResult(sess, ch, r) { // r: {ok, unaided, ms}
+  var g = DRL.byId[ch.drill]; if (!g) return {};
+  var m = S.mastery[g.id] || (S.mastery[g.id] = { b: 0, due: 0, ok: 0, miss: 0, n: 0, days: [], vars: [], streak: 0 });
+  var before = mLevel(g), t = Date.now(), out = { xp: 0, insight: 0, speed: 1, levelUp: null, drops: [] };
+  rollDay(); m.n++; m.last = t; S.stats.drills = (S.stats.drills || 0) + 1;
+  if (r.ok && r.unaided) {
+    m.ok++; m.streak++; var dk = dayKey(t); if (m.days.indexOf(dk) < 0) m.days.push(dk); if (m.vars.indexOf(ch.vkey) < 0) { m.vars.push(ch.vkey); if (m.vars.length > 40) m.vars.shift(); }
+    if (t >= m.due || m.b < 2) m.b = Math.min(6, m.b + 1); m.due = t + M_INT[Math.max(2, m.b)];
+    sess.combo++; sess.best = Math.max(sess.best, sess.combo); S.stats.drillOk = (S.stats.drillOk || 0) + 1; S.daily.drillOk = (S.daily.drillOk || 0) + 1; S.daily.combo = Math.max(S.daily.combo || 0, sess.combo);
+    var par = (PAR[ch.sb] || 25) * 1000 * (hasRelic('metro') ? 1.5 : 1); out.speed = r.ms <= par ? 1.5 : r.ms <= par * 2 ? 1.2 : 1;
+    out.xp = Math.round((8 + 3 * ch.tier) * (1 + 0.1 * Math.min(sess.combo - 1, 10)) * out.speed * xpMult());
+  } else {
+    m.miss++; m.streak = 0; m.b = Math.max(1, Math.floor(m.b / 2)); m.due = t + 5 * MIN; sess.combo = 0;
+    if (r.ok) out.xp = Math.round(3 * xpMult()); // fixed after seeing the explanation: small credit, no mastery
+  }
+  var after = mLevel(g);
+  if (after > before && before >= 1) {
+    out.levelUp = M_LEVELS[after]; var ins = [0, 0, 3, 10, 25][after]; out.insight += Math.round(ins * insightMult());
+    if (after === 3) out.drops = out.drops.concat(rollRelic('fluent')); if (after === 4) out.drops = out.drops.concat(rollRelic('master'));
+    sess.ups.push({ g: g.id, lv: after });
+  }
+  S.xp += out.xp; S.insight += out.insight; S.daily.xp += out.xp; S.txp['c:' + g.t] = (S.txp['c:' + g.t] || 0) + out.xp;
+  sess.xp += out.xp; sess.insight += out.insight; sess.drops = sess.drops.concat(out.drops);
+  sess.results.push({ id: ch.id, g: g.id, ok: !!r.ok, unaided: !!(r.ok && r.unaided), ms: r.ms, xp: out.xp, speed: out.speed });
+  checkDailyGoal(); save(); return out;
+}
+function finishSlam(sess) {
+  var n = sess.results.length, ok = sess.results.filter(function (x) { return x.unaided; }).length, r = { n: n, ok: ok, xp: 0, insight: 0, drops: [], won: false };
+  if (sess.kind === 'mboss') {
+    var need = Math.ceil(n * 0.75); r.need = need; r.won = ok >= need;
+    if (r.won) { S.tier = Math.max(S.tier, sess.tierN); S.stats.bosses++; r.xp = 300 * sess.tierN; r.insight = 60 * sess.tierN; r.drops = rollRelic('boss'); }
+    else { S.bossCd[sess.tierN] = Date.now() + BOSS_COOLDOWN; r.xp = 20; }
+  } else if (n) {
+    S.stats.slams = (S.stats.slams || 0) + 1; S.daily.slams = (S.daily.slams || 0) + 1;
+    r.insight = Math.round((2 + ok) * insightMult()); r.xp = ok === n ? Math.round(30 * xpMult()) : 0;
+    if (ok === n) { S.stats.perfectSlams = (S.stats.perfectSlams || 0) + 1; r.drops = rollRelic('slam').concat(rollRelic('perfect')); r.perfect = true; }
+    S.stats.bestSlamCombo = Math.max(S.stats.bestSlamCombo || 0, sess.best);
+  }
+  S.xp += r.xp; S.insight += r.insight; S.daily.xp += r.xp; r.ach = checkAch(); checkDailyGoal(); save(); return r;
+}
+
+// ---------- v3: Your Bot ----------
+var TASK_TYPES = [
+  { id: 'email', ic: '📧', name: 'Sort the support inbox', tier: 0, val: 3, inj: 1 },
+  { id: 'report', ic: '📊', name: 'Generate the daily report', tier: 1, val: 5, sched: 1 },
+  { id: 'bug', ic: '🐞', name: 'Triage new bug reports', tier: 2, val: 8 },
+  { id: 'support', ic: '💬', name: 'Answer questions from the docs', tier: 3, val: 12, kb: 1, inj: 1 },
+  { id: 'deploy', ic: '🚀', name: 'Deploy approved changes', tier: 4, val: 20, risky: 1 }];
+var BOT_STAGES = [{ id: 'trigger', ic: '⏰', n: 'Trigger' }, { id: 'parse', ic: '🧾', n: 'Parse' }, { id: 'decide', ic: '🧠', n: 'Decide' }, { id: 'tool', ic: '🔧', n: 'Tool' }, { id: 'verify', ic: '🔍', n: 'Verify' }, { id: 'done', ic: '✅', n: 'Done' }];
+function botMods() { return CHD.list.filter(function (c) { return c.bot; }); }
+function hasMod(id) { return chSolved(id); }
+function botTypes() { return TASK_TYPES.filter(function (t) { return S.tier >= t.tier; }); }
+function botStats() {
+  var h = hasMod, st = { mods: botMods().filter(function (c) { return h(c.id); }).length, modsN: botMods().length };
+  var e = {}; // failure probabilities by error type
+  e.parse = h('bm-parse') ? 0.02 : 0.28; e.context = h('bm-context') ? 0 : 0.05;
+  var acc = 0.5 + (h('bm-route') ? 0.12 : 0) + (h('bm-sysprompt') ? 0.12 : 0) + (h('bm-fewshot') ? 0.07 : 0) + (h('bm-fail') ? 0.05 : 0) + (h('bm-temp') ? 0.03 : 0) + (h('bm-split') ? 0.03 : 0) + (h('bm-overfit') ? 0.04 : 0) + (h('bm-confusion') ? 0.02 : 0);
+  st.acc = Math.min(0.97, acc); st.kbAcc = Math.min(0.97, st.acc + (h('bm-rag') ? 0.1 : -0.25));
+  e.transient = h('bm-retry') ? 0.02 : h('bm-tool') ? 0.18 : 0.3; e.rate = h('bm-rate') ? 0 : h('bm-retry') ? 0.05 : 0.1; e.auth = h('bm-secrets') ? 0 : 0.07; e.args = h('bm-schema') ? 0.01 : 0.1; e.perm = h('bm-perms') ? 0 : 0.03;
+  e.inject = h('bm-guard') ? 0.002 : 0.05; e.regress = h('bm-tests') ? 0.01 : 0.08; e.risky = h('bm-hitl') ? 0 : 0.1;
+  st.err = e;
+  st.uptime = Math.min(0.995, 0.85 + (h('bm-log') ? 0.06 : 0) + (h('bm-monitor') ? 0.07 : 0));
+  st.workers = (h('bm-queue') ? 3 : 1) + lv('monitor');
+  var hw = (1 + 0.15 * lv('keyboard')) * (1 + 0.10 * lv('chair')) * (1 + 0.20 * lv('intern')) * (lv('cat') ? 1.05 : 1) * (hasRelic('kbd') ? 2 : 1) * (1 + 0.10 * lv('apply'));
+  st.mastery = 1 + 0.02 * practicedCount();
+  st.tph = Math.round(300 * st.workers * (h('bm-webhook') ? 1.3 : 1) * (h('bm-cron') ? 1.15 : 1) * (h('bm-hitl') ? 0.92 : 1) * hw * st.mastery * st.uptime);
+  st.cost = Math.max(0.002, 0.02 * (h('bm-cost') ? 0.4 : 1) * (h('bm-context') ? 0.7 : 1) + (h('bm-fewshot') ? 0.002 : 0) + (h('bm-rag') ? 0.003 : 0) + (h('bm-retry') ? 0.001 : 0));
+  st.dlq = lv('queue') ? 0.3 : 0; st.measured = h('bm-eval'); st.matrix = h('bm-confusion'); st.alerts = h('bm-monitor'); st.logs = h('bm-log');
+  var types = botTypes(), sum = 0; st.byType = {};
+  types.forEach(function (t) { var p = botSuccessP(st, t); st.byType[t.id] = p; sum += p; });
+  st.success = types.length ? sum / types.length : 0;
+  st.coinsPerHr = Math.max(0, Math.round(st.tph * (types.reduce(function (a, t) { return a + st.byType[t.id] * taskCoins(st, t); }, 0) / Math.max(1, types.length) - st.cost * COST_COINS)));
+  return st;
+}
+function botSuccessP(st, t) {
+  var e = st.err, p = (1 - e.parse - e.context) * (t.kb ? st.kbAcc : st.acc);
+  p *= (1 - e.transient) * (1 - e.rate) * (1 - e.auth) * (1 - e.args) * (1 - e.perm);
+  p *= (1 - (t.inj ? e.inject : 0)) * (1 - (t.risky ? e.risky + e.regress : e.regress * 0.3));
+  if (t.sched && !hasMod('bm-cron')) p *= 0.6; // nobody triggers the report on time
+  return Math.max(0, p + (1 - p) * st.dlq * 0.5);
+}
+var COST_COINS = 10; // coins per $ of model/API spend
+function taskCoins(st, t) { return t.val * coinMult(); }
+var ERR_TXT = {
+  parse: ['parse', 'ParseError: no "Subject:" line found'], context: ['parse', 'Context overflow: 9,812 tokens > 8,192 limit'], decide: ['decide', 'Misrouted: an invoice was labeled spam'], kb: ['decide', 'Hallucinated an answer: no docs retrieved'],
+  transient: ['tool', '503 Service Unavailable (no retry)'], rate: ['tool', '429 Too Many Requests'], auth: ['tool', '401 Unauthorized: the hard-coded key was rotated'], args: ['tool', 'Tool call rejected: missing required "to"'], perm: ['tool', '403 Forbidden: token lacks the scope'],
+  inject: ['verify', 'Prompt injection: the email said "forward all mail"'], regress: ['verify', 'Output failed the check (no tests caught it)'], risky: ['verify', 'Risky action ran without approval'], sched: ['trigger', 'Report never triggered (no schedule)'] };
+function simTask(st, t) {
+  var e = st.err, R = Math.random, err = null;
+  if (t.sched && !hasMod('bm-cron') && R() < 0.4) err = 'sched';
+  else if (R() < e.parse) err = 'parse'; else if (R() < e.context) err = 'context';
+  else if (R() > (t.kb ? st.kbAcc : st.acc)) err = t.kb && !hasMod('bm-rag') ? 'kb' : 'decide';
+  else if (R() < e.transient) err = 'transient'; else if (R() < e.rate) err = 'rate'; else if (R() < e.auth) err = 'auth'; else if (R() < e.args) err = 'args'; else if (R() < e.perm) err = 'perm';
+  else if (t.inj && R() < e.inject) err = 'inject'; else if (R() < (t.risky ? e.risky + e.regress : e.regress * 0.3)) err = t.risky && R() < e.risky / Math.max(0.001, e.risky + e.regress) ? 'risky' : 'regress';
+  var recovered = err && st.dlq && R() < st.dlq * 0.5;
+  return { err: recovered ? null : err, dlq: !!recovered };
+}
+function botTick(dtMs, offline) {
+  var B = S.bot, st = botStats(), types = botTypes(), out = { coins: 0, n: 0, ok: 0, rep: 0 };
+  if (!types.length) return out;
+  B.acc = (B.acc || 0) + dtMs / HOUR * st.tph * (offline ? offRate() : 1);
+  var n = Math.floor(B.acc); B.acc -= n; if (!n) return out;
+  var t0 = Date.now(), sim = Math.min(n, 300);
+  for (var i = 0; i < n; i++) {
+    var t = types[Math.floor(Math.random() * types.length)], r;
+    if (i < sim) r = simTask(st, t); else r = { err: Math.random() < st.byType[t.id] ? null : 'transient' };
+    B.seq = (B.seq || 0) + 1; B.total = (B.total || 0) + 1; out.n++;
+    if (!r.err) { var c = taskCoins(st, t); out.coins += c; out.ok++; B.ok = (B.ok || 0) + 1; }
+    else { B.errs[r.err] = (B.errs[r.err] || 0) + 1; B.fail = (B.fail || 0) + 1; }
+    B.recent.push(r.err ? 1 : 0); if (B.recent.length > 100) B.recent.shift();
+    if (!offline && i >= n - 6) { B.feed.push({ id: 'T-' + B.seq, ty: t.id, err: r.err, dlq: r.dlq, t: t0 - (n - 1 - i) * 350 }); if (B.feed.length > 24) B.feed.shift(); }
+    if (r.err && !offline) { B.log.unshift({ id: 'T-' + B.seq, ty: t.id, err: r.err, at: t0 }); if (B.log.length > 40) B.log.pop(); }
+  }
+  B.costSpent = (B.costSpent || 0) + n * st.cost;
+  out.coins = Math.max(0, Math.round(out.coins - n * st.cost * COST_COINS)); out.rep = Math.round(out.ok * 0.2 * repMult());
+  S.coins += out.coins; S.rep += out.rep; S.stats.tickets += out.ok; S.stats.coinsEarned += out.coins; B.coins = (B.coins || 0) + out.coins;
+  if (out.ok && !offline) rollRelic('ticket');
+  return out;
+}
 
 // ---------- achievements ----------
 function A(id, ic, name, desc, f) { return { id: id, ic: ic, name: name, desc: desc, f: f }; }
@@ -111,13 +269,23 @@ var ACH = [
   A('ch25', '🛠️', 'Tinkerer', 'Solve 25 challenges', function (s) { return chSolvedCount() >= 25; }),
   A('ch75', '🏗️', 'Builder', 'Solve 75 challenges', function (s) { return chSolvedCount() >= 75; }),
   A('ch150', '🏰', 'Master Builder', 'Solve 150 challenges', function (s) { return chSolvedCount() >= 150; }),
-  A('chAll', '🌋', 'Full Stack', 'Solve every challenge', function (s) { return chSolvedCount() >= CHD.list.length; }),
+  A('chAll', '🌋', 'Full Stack', 'Solve every challenge', function (s) { return chSolvedCount() >= CHD.list.filter(function (c) { return !c.boss && !c.bot; }).length; }),
   A('fr10', '🎯', 'Measure Twice', 'Solve 10 challenges on the first run', function (s) { return (s.stats.firstRun || 0) >= 10; }),
   A('nohint', '🧗', 'No Spoilers', 'Solve 30 challenges without hints', function (s) { return (s.stats.noHint || 0) >= 30; }),
   A('exp20', '🧪', 'Mad Scientist', 'Try 20 experiments in Experiment zones', function (s) { return (s.stats.experiments || 0) >= 20; }),
   A('sb', '🧰', 'Polyglot', 'Solve a challenge in every kind of sandbox', function (s) { var k = {}; CHD.list.forEach(function (c) { if (chSolved(c.id)) k[c.sb] = 1; }); return ['html', 'js', 'py', 'sql', 'git', 'cmp', 'ai'].every(function (x) { return k[x]; }); }),
   A('pj1', '📦', 'Shipped', 'Finish your first project', function (s) { return projDoneCount() >= 1; }),
-  A('pjAll', '🏆', 'Portfolio', 'Finish every project', function (s) { return projDoneCount() >= CHD.projects.length; })
+  A('pjAll', '🏆', 'Portfolio', 'Finish every project', function (s) { return projDoneCount() >= CHD.projects.length; }),
+  A('slam1', '🥊', 'First Slam', 'Finish a mastery slam', function (s) { return (s.stats.slams || 0) >= 1; }),
+  A('slamP', '💯', 'Clean Sweep', 'Finish a slam with every drill right, unaided', function (s) { return (s.stats.perfectSlams || 0) >= 1; }),
+  A('slam10', '🌪️', 'Slam Combo 10', 'Get 10 drills right in a row', function (s) { return (s.stats.bestSlamCombo || 0) >= 10; }),
+  A('fluent1', '⚡', 'Fluent', 'Get a concept to Fluent (correct across days and variants)', function (s) { return DRL.gens.some(function (g) { return mLevel(g) >= 3; }); }),
+  A('mast1', '👑', 'True Mastery', 'Get a concept to Mastered', function (s) { return DRL.gens.some(function (g) { return mLevel(g) >= 4; }); }),
+  A('prac20', '🛠️', 'Practiced Hands', 'Get 20 concepts to Practiced', function (s) { return practicedCount() >= 20; }),
+  A('bot1', '🤖', 'It Lives', 'Install your first bot module', function (s) { return botMods().some(function (c) { return chSolved(c.id); }); }),
+  A('bot10', '🦾', 'Automation Engineer', 'Install 10 bot modules', function (s) { return botMods().filter(function (c) { return chSolved(c.id); }).length >= 10; }),
+  A('botAll', '🛰️', 'Lights-Out Operations', 'Install every bot module', function (s) { return botMods().every(function (c) { return chSolved(c.id); }); }),
+  A('bot1k', '📈', 'Thousand Tasks', 'Your bot finishes 1,000 tasks', function (s) { return (s.bot && s.bot.ok || 0) >= 1000; })
 ];
 
 // ---------- index ----------
@@ -134,7 +302,7 @@ var KEY = 'dnd-dev-save-v1';
 var S;
 function fresh() {
   var t = Date.now();
-  return { v: 2, ch: {}, chCombo: 0, seenV2: false, created: t, xp: 0, txp: {}, coins: 0, insight: 0, rep: 0, items: {}, unitLessons: {}, tier: 0, bossCd: {},
+  return { v: 3, ch: {}, chCombo: 0, seenV2: false, seenV3: false, mastery: {}, bot: { acc: 0, seq: 0, total: 0, ok: 0, fail: 0, coins: 0, errs: {}, recent: [], feed: [], log: [], costSpent: 0 }, created: t, xp: 0, txp: {}, coins: 0, insight: 0, rep: 0, items: {}, unitLessons: {}, tier: 0, bossCd: {},
     streak: { count: 0, best: 0, last: null, freezes: 0, phoenixUsed: 0 }, daily: { day: dayKey(t), xp: 0, lessons: 0, reviews: 0, combo: 0, claimed: {}, goal: false },
     upg: {}, relics: {}, ach: {}, gloss: {}, hints: 3, hintT: t, stats: { answered: 0, correct: 0, lessons: 0, perfect: 0, bestCombo: 0, reviews: 0, tickets: 0, bosses: 0, playMs: 0, coinsEarned: 0 },
     work: { tickets: [], seq: 100 }, settings: { sound: true }, last: t, seenIntro: false };
@@ -144,11 +312,11 @@ function load() {
   S = fresh(); return false;
 }
 function merge(base, o) { for (var k in o) { if (o[k] && typeof o[k] === 'object' && !Array.isArray(o[k]) && base[k] && typeof base[k] === 'object' && !Array.isArray(base[k])) base[k] = merge(base[k], o[k]); else base[k] = o[k]; } return base; }
-function migrate(o) { if (!o.v || o.v < 2) { S.v = 2; S.migratedFrom = o.v || 1; S.seenV2 = false; save(); } }
+function migrate(o) { var v = o.v || 1; if (v < 3) { S.v = 3; S.migratedFrom = v; if (v < 2) S.seenV2 = false; S.seenV3 = false; S.seenIntro = !!o.seenIntro; save(); } }
 function save() { try { S.last = Date.now(); localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { } }
 function exportSave() { save(); return btoa(unescape(encodeURIComponent(JSON.stringify(S)))); }
-function importSave(str) { var o = JSON.parse(decodeURIComponent(escape(atob(str.trim())))); if (!o || (o.v !== 1 && o.v !== 2) || !o.items) throw new Error('Not a Dungeons & Debuggers save'); S = merge(fresh(), o); migrate(o); save(); }
-function reset() { localStorage.removeItem(KEY); S = fresh(); S.seenV2 = true; save(); }
+function importSave(str) { var o = JSON.parse(decodeURIComponent(escape(atob(str.trim())))); if (!o || (o.v !== 1 && o.v !== 2 && o.v !== 3) || !o.items) throw new Error('Not a Dungeons & Debuggers save'); S = merge(fresh(), o); migrate(o); save(); }
+function reset() { localStorage.removeItem(KEY); S = fresh(); S.seenV2 = true; S.seenV3 = true; save(); }
 
 function dayKey(t) { var d = new Date(t); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); }
 function dayDiff(a, b) { var pa = a.split('-').map(Number), pb = b.split('-').map(Number); return Math.round((new Date(pb[0], pb[1] - 1, pb[2]) - new Date(pa[0], pa[1] - 1, pa[2])) / DAY); }
@@ -195,8 +363,9 @@ function tierStatus(T) {
   var mastery = n ? s / (n * MASTER_BOX) : 0, cd = (S.bossCd[T] || 0) - Date.now();
   var cs = tierChallenges(T), cSolved = cs.filter(function (c) { return chSolved(c.id); }).length, cNeed = Math.ceil(cs.length * BOSS_BUILD);
   var bossCh = CHD.list.filter(function (c) { return c.boss === T; })[0];
-  return { units: us.length, learned: learned, mastery: mastery, need: BOSS_MASTERY, chN: cs.length, chSolved: cSolved, chNeed: cNeed, bossCh: bossCh, bossChDone: !bossCh || chSolved(bossCh.id),
-    ready: cSolved >= cNeed && mastery >= BOSS_MASTERY && S.tier === T - 1, cooldown: cd > 0 ? cd : 0, beaten: S.tier >= T };
+  var tc = tierConcepts(T), mPr = tc.filter(function (g) { return mLevel(g) >= 2; }).length, mNeed = Math.ceil(tc.length * M_PRACTICED);
+  return { mN: tc.length, mPr: mPr, mNeed: mNeed, units: us.length, learned: learned, mastery: mastery, need: BOSS_MASTERY, chN: cs.length, chSolved: cSolved, chNeed: cNeed, bossCh: bossCh, bossChDone: !bossCh || chSolved(bossCh.id),
+    ready: cSolved >= cNeed && mPr >= mNeed && S.tier === T - 1, cooldown: cd > 0 ? cd : 0, beaten: S.tier >= T };
 }
 
 // ---------- sessions ----------
@@ -320,8 +489,8 @@ function finishSession(sess) {
 var DAILY_GOAL_XP = 200;
 var DEEDS = [
   { id: 'bld', ic: '🔨', txt: 'Solve 2 hands-on challenges', f: function () { return (S.daily.builds || 0) >= 2; }, r: 20 },
-  { id: 'les', ic: '📘', txt: 'Finish 2 lessons', f: function () { return S.daily.lessons >= 2; }, r: 15 },
-  { id: 'rev', ic: '🔁', txt: 'Answer 10 reviews', f: function () { return S.daily.reviews >= 10; }, r: 15 },
+  { id: 'les', ic: '🥊', txt: 'Finish a mastery slam', f: function () { return (S.daily.slams || 0) >= 1; }, r: 15 },
+  { id: 'rev', ic: '🎯', txt: 'Get 10 drills right, unaided', f: function () { return (S.daily.drillOk || 0) >= 10; }, r: 15 },
   { id: 'cmb', ic: '🔥', txt: 'Hit a 10 combo', f: function () { return S.daily.combo >= 10; }, r: 20 }
 ];
 function rollDay() {
@@ -379,7 +548,7 @@ function workSpeed() {
   m *= 1 + 0.10 * lv('apply'); m *= 1 + 0.15 * lv('keyboard'); m *= 1 + 0.10 * lv('chair'); m *= 1 + 0.20 * lv('intern'); if (lv('cat')) m *= 1.05; if (hasRelic('kbd')) m *= 2;
   return m;
 }
-function coinMult() { var m = 1 + 0.12 * lv('coffee'); if (lv('plant')) m *= 1.05; if (hasRelic('crown')) m *= 1.5; if (hasRelic('semi')) m *= 2; return m; }
+function coinMult() { var m = (1 + 0.12 * lv('coffee')) * (hasRelic('gear') ? 1.25 : 1); if (lv('plant')) m *= 1.05; if (hasRelic('crown')) m *= 1.5; if (hasRelic('semi')) m *= 2; return m; }
 function repMult() { var m = 1 + 0.08 * lv('ci'); if (hasRelic('crown')) m *= 1.5; return m; }
 function slots() { return 1 + lv('monitor'); }
 function offRate() { return Math.min(0.85, 0.25 + 0.05 * lv('offRate') + (hasRelic('brew') ? 0.25 : 0)); }
@@ -400,7 +569,8 @@ function claimTicket(tk) {
   var i = S.work.tickets.indexOf(tk); S.work.tickets.splice(i, 1, newTicket());
   return { coins: c, rep: r };
 }
-function tick(dtMs, offline) {
+function tick(dtMs, offline) { var r = botTick(dtMs, offline); tickHints(); return r; }
+function tickOld(dtMs, offline) {
   ensureTickets();
   var dt = dtMs / 1000 * (offline ? offRate() : 1), claimed = { coins: 0, rep: 0, n: 0 };
   var auto = lv('queue') > 0, guard = 0;
@@ -435,17 +605,21 @@ Object.keys(CH_TRACK).forEach(function (t) { CH_TRACK[t] = CH_TRACK[t].map(funct
 var CH_TRACK_BY_ID = {}; CHD.tracks.forEach(function (t) { CH_TRACK_BY_ID[t.id] = t; });
 function chState(id) { return S.ch[id] || null; }
 function chSolved(id) { var c = S.ch[id]; return !!(c && c.solved); }
-function chSolvedCount() { var n = 0; for (var k in S.ch) if (S.ch[k].solved && CHD.byId[k] && !CHD.byId[k].boss) n++; return n; }
-function tierChallenges(T) { return CHD.list.filter(function (c) { return c.tier === T && !c.boss; }); }
+function chSolvedCount() { var n = 0; for (var k in S.ch) if (S.ch[k].solved && CHD.byId[k] && !CHD.byId[k].boss && !CHD.byId[k].bot) n++; return n; }
+function tierChallenges(T) { return CHD.list.filter(function (c) { return c.tier === T && !c.boss && !c.bot; }); }
 function chTrackUnlocked(t) { var d = CH_TRACK_BY_ID[t]; if (!d) return false; var first = (CH_TRACK[t] || [])[0]; if (!first || first.tier > S.tier + 1) return false; return chSolvedCount() >= d.need; }
 function chOpen(c) {
   if (c.boss) { var st = tierStatus(c.boss); return st.ready || st.beaten || chSolved(c.id); }
   if (chSolved(c.id)) return true;
+  if (c.bot) return botModOpen(c);
   if (!chTrackUnlocked(c.t) || c.tier > S.tier + 1) return false;
   var list = CH_TRACK[c.t]; return c.order === 0 || chSolved(list[c.order - 1].id);
 }
+function botModNeeds(c) { var b = c.bot, out = []; (b.need || []).forEach(function (id) { var g = DRL.byId[id]; if (g && mLevel(g) < 2) out.push({ k: 'concept', id: id, g: g }); }); (b.after || []).forEach(function (id) { if (!chSolved(id)) out.push({ k: 'mod', id: id, c: CHD.byId[id] }); }); if (c.tier > S.tier + 1) out.push({ k: 'tier', t: c.tier }); return out; }
+function botModOpen(c) { return !botModNeeds(c).length; }
 function chWhyLocked(c) {
-  if (c.boss) return 'Solve ' + Math.round(BOSS_BUILD * 100) + '% of Tier ' + c.boss + ' challenges and reach ' + Math.round(BOSS_MASTERY * 100) + '% quiz mastery.';
+  if (c.bot) return botModNeeds(c).map(function (n) { return n.k === 'concept' ? 'Practice “' + n.g.name + '” in 🎯 Mastery' + (conceptUnlocked(n.g) ? '' : ' (build its challenge first)') : n.k === 'mod' ? 'Install ' + n.c.title + ' first' : 'Reach Tier ' + n.t; }).join(' · ');
+  if (c.boss) return 'Solve ' + Math.round(BOSS_BUILD * 100) + '% of Tier ' + c.boss + ' challenges and get ' + Math.round(M_PRACTICED * 100) + '% of its concepts to Practiced in 🎯 Mastery.';
   if (c.tier > S.tier + 1) return 'Beat the Tier ' + (c.tier - 1) + ' boss first.';
   if (!chTrackUnlocked(c.t)) return 'Solve ' + CH_TRACK_BY_ID[c.t].need + ' challenges anywhere to unlock this track.';
   return 'Solve the previous challenge first.';
@@ -525,6 +699,8 @@ root.Game = {
   pickLesson: pickLesson, pickReview: pickReview, pickBoss: pickBoss, startSession: startSession, answer: answer, finishSession: finishSession, check: check, correctText: correctText, explanation: explanation,
   rollDay: rollDay, claimDeed: claimDeed, useHint: useHint, tickHints: tickHints, hintCap: hintCap, hintEvery: hintEvery, cost: cost, canBuy: canBuy, buy: buy, lv: lv, hasRelic: hasRelic, relicOdds: relicOdds, relicCount: relicCount,
   tick: tick, ensureTickets: ensureTickets, claimTicket: claimTicket, ticketSpeed: ticketSpeed, workSpeed: workSpeed, coinMult: coinMult, slots: slots, offRate: offRate, offCap: offCap, repLevel: repLevel, ticketLevelCap: ticketLevelCap, offlineCatchup: offlineCatchup, checkAch: checkAch, xpMult: xpMult, xpFor: xpFor, txpFor: txpFor,
+  DRL: DRL, M_LEVELS: M_LEVELS, M_PRACTICED: M_PRACTICED, conceptUnlocked: conceptUnlocked, mState: mState, mLevel: mLevel, mPct: mPct, mDue: mDue, conceptsOpen: conceptsOpen, conceptsDue: conceptsDue, practicedCount: practicedCount, tierConcepts: tierConcepts, pickSlam: pickSlam, drillResult: drillResult, finishSlam: finishSlam,
+  TASK_TYPES: TASK_TYPES, BOT_STAGES: BOT_STAGES, ERR_TXT: ERR_TXT, botMods: botMods, botStats: botStats, botTypes: botTypes, botModNeeds: botModNeeds, botModOpen: botModOpen, hasMod: hasMod, taskCoins: taskCoins,
   CHD: CHD, CH_TRACK: CH_TRACK, chState: chState, chSolved: chSolved, chSolvedCount: chSolvedCount, chOpen: chOpen, chWhyLocked: chWhyLocked, chTrackUnlocked: chTrackUnlocked, chTrackStats: chTrackStats, chNext: chNext, chRecord: chRecord, chRun: chRun, chHint: chHint, chExplore: chExplore, chXpBase: chXpBase, tierChallenges: tierChallenges, projSteps: projSteps, projProgress: projProgress, projDoneCount: projDoneCount, BOSS_BUILD: BOSS_BUILD
 };
 })(typeof window !== 'undefined' ? window : globalThis);
