@@ -80,7 +80,7 @@ CMP({ id: 'cpp-str', t: 'cpp', tier: 2, icon: '🧵', title: 'C strings vs std::
   hints: ['At least one side of `+` must be a real std::string.'],
   compare: [{ lang: 'py', label: 'Python', code: L('print("Score: " + str(42))', 'print(f"Score: {42}")') }, { lang: 'java', label: 'Java', code: L('public class Main {', '    public static void main(String[] args) {', '        System.out.println("Score: " + 42);', '    }', '}'), note: 'Java converts the number to text automatically when one side is a String.' }],
   learn: { h: 'Two kinds of strings', x: 'A literal like `"Score: "` is an old C-style array of characters, not a `std::string`, so `"a" + "b"` will not compile. Once one side is a `std::string` (made by `std::to_string` or `std::string(...)`), `+` concatenates.\n\nC++ carries 50 years of history, and C compatibility is both its strength and its sharp edges.', terms: ['string', 'concatenation'] } });
-CMP({ id: 'cpp-heap', t: 'cpp', tier: 3, icon: '🏔️', title: 'The heap: new and delete',
+CMP({ id: 'cpp-heap', t: 'cpp', tier: 4, icon: '🏔️', title: 'The heap: new and delete',
   story: 'Ask for memory on the **heap** with `new`. Every `new` needs exactly one `delete`. Try zero, one and two, and read what happens.',
   code: L(INC, '', 'int main() {', '    int* boss = new int(500);', '    std::cout << "Boss HP: " << *boss << std::endl;', '    {{d}}', '    return 0;', '}'), slots: { d: { o: ['', 'delete boss;', 'delete boss; delete boss;'], l: ['(no delete)', 'delete boss;', 'delete twice'] } }, sol: { d: 'delete boss;' },
   goals: [['It prints Boss HP: 500 and exits cleanly', "phase === 'ok' && out === 'Boss HP: 500\\n'"], ['The memory is freed exactly once', "(src.match(/delete boss/g) || []).length === 1"]],
@@ -97,7 +97,7 @@ CMP({ id: 'at-ts', t: 'atlas', tier: 2, icon: '🔷', title: 'TypeScript: types 
   hints: ['The parameter types say what is allowed.'],
   compare: [{ lang: 'js', label: 'Plain JavaScript', code: L('function add(a, b) {', '    return a + b;', '}', 'console.log(add("1", 2));'), note: 'No checker, so "1" + 2 quietly becomes the string "12".' }],
   learn: { h: 'TypeScript', x: 'TypeScript adds **type annotations** (`a: number`) to JavaScript. `tsc` checks them before running and catches `add("1", 2)`, a bug plain JS would turn into "12". The types are then erased, and browsers run the plain JavaScript.\n\nMost large JavaScript codebases (VS Code, Slack, Airbnb) use TypeScript.', terms: ['typescript', 'static-typing'] } });
-CMP({ id: 'at-tsnull', t: 'atlas', tier: 2, icon: '🕳️', title: 'TypeScript: maybe null', lang: 'ts',
+CMP({ id: 'at-tsnull', t: 'atlas', tier: 3, icon: '🕳️', title: 'TypeScript: maybe null', lang: 'ts',
   story: '`find` might return `null`. TypeScript\'s strict mode makes you deal with that before using the result. Print the name, or "nobody" when nothing was found.',
   code: L('const users = ["Ava", "Bo"];', 'function find(name: string): string | null {', '    return users.includes(name) ? name : null;', '}', 'const u = find("Cy");', 'console.log({{e}});'), slots: { e: ['u.toUpperCase()', 'u!.toUpperCase()', 'u?.toUpperCase() ?? "nobody"'] }, sol: { e: 'u?.toUpperCase() ?? "nobody"' },
   goals: [['It prints nobody without crashing', "phase === 'ok' && out === 'nobody\\n'"]],
@@ -111,7 +111,7 @@ CMP({ id: 'at-java', t: 'atlas', tier: 2, icon: '☕', title: 'Java: everything 
   hints: ['`console.log` is JavaScript. Java\'s method adds "ln" for line.'],
   compare: [{ lang: 'cpp', label: 'C++', code: L('#include <iostream>', 'int main() {', '    std::cout << "Hello, Java" << std::endl;', '}') }, { lang: 'go', label: 'Go', code: L('package main', '', 'import "fmt"', '', 'func main() {', '    fmt.Println("Hello, Java")', '}') }],
   learn: { h: 'Java', x: 'Java (1995) runs on the **JVM**: `javac` compiles to bytecode, and the JVM runs it on any OS. Everything lives in a class. `public static void main(String[] args)` is the entry point. `print` does not add a newline, `println` does.\n\nJava powers Android apps, banks and huge back-end systems. Kotlin is its modern cousin.', terms: ['java', 'compiler', 'virtual-machine'] } });
-CMP({ id: 'at-jeq', t: 'atlas', tier: 3, icon: '🟰', title: 'Java: == vs .equals', lang: 'java',
+CMP({ id: 'at-jeq', t: 'atlas', tier: 4, icon: '🟰', title: 'Java: == vs .equals', lang: 'java',
   story: 'Two strings both contain "hi". Is one equal to the other? In Java, the answer depends on what you ask.',
   code: L('public class Main {', '    public static void main(String[] args) {', '        String a = "hi";', '        String b = new String("hi");', '        System.out.println({{e}});', '    }', '}'), slots: { e: ['a == b', 'a.equals(b)'] }, sol: { e: 'a.equals(b)' },
   goals: [['It prints true', "phase === 'ok' && out === 'true\\n'"]],
@@ -132,7 +132,7 @@ CMP({ id: 'at-rmac', t: 'atlas', tier: 2, icon: '❗', title: 'Rust: macros!', l
   hints: ['Macros end in `!`, and the "ln" adds a newline.'],
   compare: [{ lang: 'py', label: 'Python', code: L('level = 3', 'print(f"Level {level}")') }, { lang: 'go', label: 'Go', code: L('package main', '', 'import "fmt"', '', 'func main() {', '    level := 3', '    fmt.Printf("Level %d\\n", level)', '}'), note: 'Go uses C-style format verbs like %d.' }],
   learn: { h: 'Macros', x: '`println!` is a **macro**: code that writes code at compile time. It checks at compile time that the `{}` placeholders match the arguments, which a normal function could not do. Without the `!`, Rust looks for a function named println and tells you it found a macro instead.', terms: ['rust', 'macro'] } });
-CMP({ id: 'at-rmove', t: 'atlas', tier: 3, icon: '📦', title: 'Rust: ownership', lang: 'rust',
+CMP({ id: 'at-rmove', t: 'atlas', tier: 4, icon: '📦', title: 'Rust: ownership', lang: 'rust',
   story: 'In Rust every value has exactly one **owner**. Hand the name to `t`, then print `s`. Which hand-off still lets you use `s`?',
   code: L('fn main() {', '    let s = String::from("sword");', '    let t = {{x}};', '    println!("{} and {}", s, t);', '}'), slots: { x: ['s', 's.clone()', '&s'] }, sol: { x: 's.clone()' },
   goals: [['It compiles and prints sword and sword', "phase === 'ok' && out === 'sword and sword\\n'"]],

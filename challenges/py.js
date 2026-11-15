@@ -143,7 +143,7 @@ CH({ id: 'quest-4', t: 'py', tier: 2, sb: 'py', icon: '🗡️', title: 'Adventu
   goals: [['Inventory is exactly ["sword"]', "inventory == ['sword']"], ['The armory is now empty', "'armory' not in items"]],
   hints: ['`get` reads an item and leaves it there. `extend` adds each **character** of a string.', '`pop` to take it, `append` to add one thing.'],
   learn: { h: 'Reading vs removing', x: '`dict.get(k)` reads, while `dict.pop(k)` reads **and removes**. That is the difference between looking at the sword and picking it up. `list.extend("sword")` adds each letter: `["s", "w", "o", "r", "d"]`, because a string is a sequence of characters.', terms: ['list', 'dictionary'] } });
-CH({ id: 'quest-5', t: 'py', tier: 2, sb: 'py', icon: '🏁', title: 'Adventure: the game loop', proj: ['quest', 5], inputs: ['north', 'look', 'south', 'east', 'look', 'quit'],
+CH({ id: 'quest-5', t: 'py', tier: 3, sb: 'py', icon: '🏁', title: 'Adventure: the game loop', proj: ['quest', 5], inputs: ['north', 'look', 'south', 'east', 'look', 'quit'],
   story: 'Tie it together with a game loop that reads commands. The sandbox will type: north, look, south, east, look, quit. Typing **quit** must end the game.',
   code: L(ROOMS, '', MOVE_OK, '', LOOK.replace('{{m2}}', 'pop').replace('{{m}}', 'append'), '', 'here = "hall"', 'while True:', '    cmd = input("> ")', '    if cmd == "quit":', '        {{kw}}', '    elif cmd == "look":', '        look(here)', '    else:', '        here = move(here, cmd)', 'print("You leave with:", inventory)'), slots: { kw: ['pass', 'continue', 'break'] }, sol: { kw: 'break' },
   goals: [['You collect the sword and the map', "inventory == ['sword', 'map']"], ['The game ends cleanly', "'You leave with' in _out"]],

@@ -69,7 +69,7 @@ CH({ id: 's-left', t: 'sql', tier: 3, sb: 'sql', icon: '👻', title: 'Customers
   goals: [['Dee', "names(rows) == 'Dee'"]],
   hints: ['An inner JOIN drops customers with no match.', 'A LEFT JOIN keeps every customer, with NULLs where there is no order.'],
   learn: { h: 'LEFT JOIN finds what is missing', x: '`JOIN` (an inner join) keeps only matched pairs, so Dee disappears. `LEFT JOIN` keeps **every** row from the left table and fills NULLs where nothing matches. Then `WHERE orders.id IS NULL` finds exactly the unmatched ones.\n\nThis "anti-join" pattern finds inactive users, unsold products and orphaned records.', terms: ['join', 'null'] } });
-CH({ id: 's-index', t: 'sql', tier: 3, sb: 'sql', icon: '⚡', title: 'Make lookups fast', setup: L(PETS, 'CREATE TABLE users (id INTEGER PRIMARY KEY, email TEXT);', "WITH RECURSIVE n(i) AS (SELECT 1 UNION ALL SELECT i+1 FROM n WHERE i < 5000) INSERT INTO users (email) SELECT 'user' || i || '@example.com' FROM n;"),
+CH({ id: 's-index', t: 'sql', tier: 4, sb: 'sql', icon: '⚡', title: 'Make lookups fast', setup: L(PETS, 'CREATE TABLE users (id INTEGER PRIMARY KEY, email TEXT);', "WITH RECURSIVE n(i) AS (SELECT 1 UNION ALL SELECT i+1 FROM n WHERE i < 5000) INSERT INTO users (email) SELECT 'user' || i || '@example.com' FROM n;"),
   story: '5,000 users, and logins look them up by email. Ask SQLite **how** it would run the query. You want it to use an index, not scan every row.',
   code: L('{{idx}}', "EXPLAIN QUERY PLAN SELECT * FROM users WHERE email = 'user4999@example.com';"), slots: { idx: { o: ['', 'CREATE INDEX idx_id ON users(id);', 'CREATE INDEX idx_email ON users(email);'], l: ['(no index)', 'index on id', 'index on email'] } }, sol: { idx: 'CREATE INDEX idx_email ON users(email);' },
   goals: [['The plan says USING INDEX', "rows.length > 0 && /USING (COVERING )?INDEX idx_email/.test(String(rows[0][3]))"]],
@@ -103,7 +103,7 @@ CH({ id: 'books-4', t: 'sql', tier: 3, sb: 'sql', icon: '📈', title: 'Book sho
   goals: [['Clean Code with 112.5', "rows.length == 1 && rows[0][0] == 'Clean Code' && Math.abs(rows[0][1] - 112.5) < 0.001"]],
   hints: ['Dune sold the most copies (6), but it is cheap.', 'Multiply copies by price inside SUM.'],
   learn: { h: 'Ask the right question', x: 'By copies, Dune wins with 6. By revenue, Clean Code wins: 3 × $37.50 = $112.50. Same data, different question, different answer. Half of data work is pinning down which question the business is actually asking.', terms: ['aggregate', 'join'] } });
-CH({ id: 'books-5', t: 'sql', tier: 3, sb: 'sql', icon: '🚚', title: 'Book shop: restock report', proj: ['books', 5], setup: BOOKS,
+CH({ id: 'books-5', t: 'sql', tier: 4, sb: 'sql', icon: '🚚', title: 'Book shop: restock report', proj: ['books', 5], setup: BOOKS,
   story: 'Save a reusable **view** that lists books with fewer than 5 in stock, so the shop can check it every morning with one SELECT.',
   code: L('CREATE VIEW restock AS', '  SELECT title, stock FROM books WHERE stock {{op}} {{n}};', 'SELECT * FROM restock ORDER BY stock;'), slots: { op: ['>', '=', '<'], n: { n: [0, 10, 1], s: 0 } }, sol: { op: '<', n: 5 },
   goals: [['SICP, Clean Architecture, Clean Code', "names(rows) == 'SICP,Clean Architecture,Clean Code'"], ['The view exists', "(q1(\"SELECT COUNT(*) FROM sqlite_master WHERE type='view' AND name='restock'\")||[[0]])[0][0] == 1"]],

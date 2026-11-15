@@ -42,7 +42,7 @@ CH({ id: 'd-test1', t: 'dbg', tier: 2, sb: 'js', icon: '🧪', title: 'Write a t
   goals: [['Your new test fails on the buggy code', "/FAIL/.test(logs[2] || '')"]],
   hints: ['A good test targets the bug, not the cases that already work.', 'The function only checks for an @ somewhere after the first character.'],
   learn: { h: 'Tests that fail first', x: 'A test that passes on buggy code proves nothing. Pros write a test that **reproduces** the bug (red), then fix the code until it passes (green). That is test-driven debugging.\n\nThe other options were valid inputs, but the buggy function already handled them correctly.', terms: ['unit-test', 'regression'] } });
-CH({ id: 'd-test2', t: 'dbg', tier: 2, sb: 'js', icon: '🟢', title: 'Now make it green', view: 'console',
+CH({ id: 'd-test2', t: 'dbg', tier: 3, sb: 'js', icon: '🟢', title: 'Now make it green', view: 'console',
   story: 'Fix `isEmail` so every test passes. The tests are the spec.',
   code: L('function isEmail(s) {', '  return {{rule}};', '}', 'const cases = [["noah@example.com", true], ["not an email", false], ["noah@", false], ["@example.com", false], ["a@b.co", true]];', 'let ok = 0;', 'for (const [input, want] of cases) {', '  const got = isEmail(input);', '  console.log((got === want ? "✅" : "❌") + " " + JSON.stringify(input) + " → " + got);', '  if (got === want) ok++;', '}', 'console.log(ok + "/" + cases.length + " passing");'), slots: { rule: ['s.includes("@")', 's.indexOf("@") > 0', 's.endsWith(".com")', '/^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$/.test(s)'] }, sol: { rule: '/^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$/.test(s)' },
   goals: [['5/5 passing', "log.indexOf('5/5 passing') >= 0"]],
@@ -54,7 +54,7 @@ CH({ id: 'd-pyerr', t: 'dbg', tier: 2, sb: 'py', icon: '📜', title: 'No error,
   goals: [['It continues for YES', "'Continuing!' in _out"]],
   hints: ['Compare in one consistent case.'],
   learn: { h: 'Normalize before comparing', x: 'String comparison is exact: `"YES" == "yes"` is False. Normalize first with `.lower()` (and often `.strip()`). `.upper()` gives "YES", which does not equal "yes".\n\nBugs with no error message are found by checking your assumptions: print the value with `repr()` and compare.', terms: ['string'] } });
-CH({ id: 'd-async', t: 'dbg', tier: 3, sb: 'js', icon: '⏱️', title: 'The race condition', view: 'console', delay: 500,
+CH({ id: 'd-async', t: 'dbg', tier: 4, sb: 'js', icon: '⏱️', title: 'The race condition', view: 'console', delay: 500,
   mock: { '/api/cart': { body: { items: 3 } } },
   story: 'The cart badge shows 0 even though the server says 3. Look at the order of the logs, because the code does not run top to bottom the way it reads.',
   code: L('let count = 0;', 'async function loadCart() {', '  const res = await fetch("/api/cart");', '  count = (await res.json()).items;', '  console.log("2. loaded:", count);', '}', 'async function main() {', '  {{a}}loadCart();', '  console.log("3. badge shows:", count);', '}', 'console.log("1. start");', 'main();'), slots: { a: { o: ['', 'await '], l: ['(no await)', 'await'] } }, sol: { a: 'await ' },

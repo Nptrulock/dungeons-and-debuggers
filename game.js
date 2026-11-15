@@ -431,7 +431,7 @@ function checkAch() { var got = []; ACH.forEach(function (a) { if (!S.ach[a.id] 
 
 // ---------- hands-on challenges ----------
 var CH_TRACK = {}; CHD.list.forEach(function (c) { if (c.boss) return; (CH_TRACK[c.t] = CH_TRACK[c.t] || []).push(c); });
-Object.keys(CH_TRACK).forEach(function (t) { CH_TRACK[t].forEach(function (c, i) { c.order = i; }); });
+Object.keys(CH_TRACK).forEach(function (t) { CH_TRACK[t] = CH_TRACK[t].map(function (c, i) { return [c, i]; }).sort(function (a, b) { return a[0].tier - b[0].tier || a[1] - b[1]; }).map(function (x) { return x[0]; }); CH_TRACK[t].forEach(function (c, i) { c.order = i; }); });
 var CH_TRACK_BY_ID = {}; CHD.tracks.forEach(function (t) { CH_TRACK_BY_ID[t.id] = t; });
 function chState(id) { return S.ch[id] || null; }
 function chSolved(id) { var c = S.ch[id]; return !!(c && c.solved); }
