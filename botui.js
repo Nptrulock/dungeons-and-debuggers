@@ -15,7 +15,7 @@ function avatarHTML(st) {
     '<div class="botLv">v' + (1 + Math.floor(st.mods / 3)) + '.' + (st.mods % 3) + ' · ' + st.mods + '/' + st.modsN + ' modules</div></div>';
 }
 function pipeHTML() {
-  return '<div class="pipe" id="botPipe">' + G.BOT_STAGES.map(function (s, i) { return '<div class="stg" data-s="' + s.id + '"><div class="sic">' + s.ic + '</div><div class="tiny">' + s.n + '</div></div>' + (i < G.BOT_STAGES.length - 1 ? '<div class="lnk"></div>' : ''); }).join('') + '</div><div class="pipeNow tiny" id="botNow">Waiting for the next task…</div>';
+  return '<div class="botpipe" id="botPipe">' + G.BOT_STAGES.map(function (s, i) { return '<div class="stg" data-s="' + s.id + '"><div class="sic">' + s.ic + '</div><div class="tiny">' + s.n + '</div></div>' + (i < G.BOT_STAGES.length - 1 ? '<div class="lnk"></div>' : ''); }).join('') + '</div><div class="pipeNow tiny" id="botNow">Waiting for the next task…</div>';
 }
 function feedHTML() {
   var f = G.S.bot.feed.slice(-8).reverse();

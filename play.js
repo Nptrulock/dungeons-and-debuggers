@@ -43,7 +43,7 @@ function close() {
 function code() { return P.typed ? P.text : SB.fill(P.ch, P.vals); }
 function drawAll() { drawTitle(); drawStory(); drawGoals(); drawHint(); drawCode(); drawFoot(); drawOutHead(); if (P.ch.sb === 'git') drawGit(); if (P.ch.sb === 'ai') drawAI(); if (P.ch.sb === 'cmp') drawCmpIdle(); }
 function drawTitle() {
-  if (P.drill) { var o = P.drill.o, tr = TRK[P.ch.t] || { icon: '🎯', name: '' }; $('#cpTitle').innerHTML = '<div class="tiny">' + (o.label || '🎯 Drill') + ' · ' + tr.icon + ' ' + esc(tr.name) + ' · ' + SBNAME[P.ch.sb] + (o.combo ? ' · 🔥' + o.combo : '') + ' · ⏱ <span id="drTimer">0s</span></div><b class="drTag">' + esc(P.ch.title) + '</b>'; return; }
+  if (P.drill) { var o = P.drill.o, tr = TRK[P.ch.t] || { icon: '🎯', name: '' }; $('#cpTitle').innerHTML = '<div class="tiny">' + (o.label || '🎯 Drill') + ' · ' + tr.icon + ' ' + esc(tr.name) + (SBNAME[P.ch.sb] !== tr.name ? ' · ' + SBNAME[P.ch.sb] : '') + (o.combo ? ' · 🔥' + o.combo : '') + ' · ⏱ <span id="drTimer">0s</span></div><b class="drTag">' + esc(P.ch.title) + '</b>'; return; }
   var ch = P.ch, t = ch.boss ? { icon: '⚔️', name: 'Boss' } : TRK[ch.t];
   $('#cpTitle').innerHTML = '<div class="tiny">' + t.icon + ' ' + esc(t.name) + ' · ' + SBNAME[ch.sb] + (ch.proj ? ' · ' + PRJ[ch.proj[0]].icon + ' ' + esc(PRJ[ch.proj[0]].name) + ' ' + ch.proj[1] + '/' + G.projSteps(ch.proj[0]).length : '') + '</div><b>' + (ch.icon || '') + ' ' + esc(ch.title) + '</b>';
 }
